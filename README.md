@@ -12,12 +12,12 @@ $ npm i gundb-react-hooks
 
 ## Hooks
 
-- [useGun](https://github.com/alterx/gundb-react-hooks/blob/master/LICENSE.md)
-- [useGunNamespace](https://github.com/alterx/gundb-react-hooks/blob/master/LICENSE.md)
-- [useGunKeyAuth](https://github.com/alterx/gundb-react-hooks/blob/master/LICENSE.md)
-- [useGunKeys](https://github.com/alterx/gundb-react-hooks/blob/master/LICENSE.md)
-- [useGunState](https://github.com/alterx/gundb-react-hooks/blob/master/LICENSE.md)
-- [useGunCollectionState](https://github.com/alterx/gundb-react-hooks/blob/master/LICENSE.md)
+- [useGun](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGun.md)
+- [useGunNamespace](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunNamespace.md)
+- [useGunKeyAuth](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunKeyAuth.md)
+- [useGunKeys](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunKeys.md)
+- [useGunState](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunState.md)
+- [useGunCollectionState](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunCollectionState.md)
 
 ## License
 
