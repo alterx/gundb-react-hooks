@@ -1,13 +1,14 @@
 # GunDB React hooks
 
-This is a _very_ alpha set of hooks that wrap around GunDB core functionality.
+This is a set of hooks that wrap around GunDB core functionality.
+API is subject to change, but will more or less remain similar.
 
 ## Installing
 
 Use `pnpm`, `npm` or `yarn` to install the dependencies:
 
 ```
-$ npm i gundb-react-hooks
+$ npm i @altrx/gundb-react-hooks
 ```
 
 ## Hooks
