@@ -187,10 +187,10 @@ export const useGunState = (
   ];
 };
 
-export function useGunCollectionState(
+export const useGunCollectionState = (
   ref,
   { appKeys, sea, interval = 100, encrypted = true }
-) {
+) => {
   const [gunAppGraph] = useState(ref);
   const [collection, dispatch] = useSafeReducer(reducer, {});
   const handler = useRef(null);
@@ -255,4 +255,4 @@ export function useGunCollectionState(
     { addToSet, updateInSet, removeFromSet },
     gunAppGraph, // the actual graph is sent in case something advanced needs to be done
   ];
-}
+};
