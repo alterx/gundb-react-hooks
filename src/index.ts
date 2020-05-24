@@ -213,13 +213,17 @@ export const useGunState = <T>(
   // Working with root node fields
   const put = async (data: T) => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await new Promise((resolve) =>
-      gunAppGraph.put(encryptedData, () => resolve())
+    await new Promise((resolve, reject) =>
+      gunAppGraph.put(encryptedData, (ack) =>
+        ack.ok ? resolve() : reject(ack.err)
+      )
     );
   };
 
   const remove = async (field: string) => {
-    await new Promise((resolve) => gunAppGraph.put(null, () => resolve()));
+    await new Promise((resolve, reject) =>
+      gunAppGraph.put(null, (ack) => (ack.ok ? resolve() : reject(ack.err)))
+    );
     dispatch({ type: 'remove', data: field });
   };
 
@@ -280,8 +284,10 @@ export const useGunCollectionState = <T>(
 
   const updateInSet = async (nodeID: string, data: T) => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await new Promise((resolve) =>
-      gunAppGraph.get(nodeID).put(encryptedData, () => resolve())
+    await new Promise((resolve, reject) =>
+      gunAppGraph
+        .get(nodeID)
+        .put(encryptedData, (ack) => (ack.ok ? resolve() : reject(ack.err)))
     );
     dispatch({ type: 'update', data: { nodeID, ...data } });
   };
@@ -289,19 +295,25 @@ export const useGunCollectionState = <T>(
   const addToSet = async (data: T, nodeID?: string) => {
     let encryptedData = await encryptData(data, appKeys, sea);
     if (!nodeID) {
-      await new Promise((resolve) =>
-        gunAppGraph.set(encryptedData, () => resolve())
+      await new Promise((resolve, reject) =>
+        gunAppGraph.set(encryptedData, (ack) =>
+          ack.ok ? resolve() : reject(ack.err)
+        )
       );
     } else {
-      await new Promise((resolve) =>
-        gunAppGraph.get(nodeID).put(encryptedData, () => resolve())
+      await new Promise((resolve, reject) =>
+        gunAppGraph
+          .get(nodeID)
+          .put(encryptedData, (ack) => (ack.ok ? resolve() : reject(ack.err)))
       );
     }
   };
 
   const removeFromSet = async (nodeID: string) => {
-    await new Promise((resolve) =>
-      gunAppGraph.get(nodeID).put(null, () => resolve())
+    await new Promise((resolve, reject) =>
+      gunAppGraph
+        .get(nodeID)
+        .put(null, (ack) => (ack.ok ? resolve() : reject(ack.err)))
     );
   };
 
