@@ -70,7 +70,7 @@ const debouncedUpdates = (dispatcher, timeout = 100) => {
   };
 };
 
-const reducer = (state: Object, { data, type }: ActionType) => {
+const reducer = (state: {}, { data, type }: ActionType) => {
   switch (type) {
     case 'add':
       return { ...state, ...data };
@@ -162,7 +162,7 @@ export const useGunKeys = (sea: any, initialValue: any) => {
   return [keys, setKeys];
 };
 
-export const useGunState = (
+export const useGunState = <T>(
   ref: GunRef,
   opts: Options = {
     appKeys: '',
@@ -172,7 +172,7 @@ export const useGunState = (
 ) => {
   const { appKeys, sea, interval = 100 } = opts;
   const [gunAppGraph] = useState(ref);
-  const [fields, dispatch] = useSafeReducer<Object>(reducer, {});
+  const [fields, dispatch] = useSafeReducer<T>(reducer, {});
   const handler = useRef(null);
   const isMounted = useIsMounted();
 
@@ -211,7 +211,7 @@ export const useGunState = (
   }, []);
 
   // Working with root node fields
-  const put = async (data: any) => {
+  const put = async (data: T) => {
     let encryptedData = await encryptData(data, appKeys, sea);
     await new Promise((resolve) =>
       gunAppGraph.put(encryptedData, () => resolve())
@@ -223,10 +223,10 @@ export const useGunState = (
     dispatch({ type: 'remove', data: field });
   };
 
-  return [fields, { put, remove }];
+  return { fields, put, remove };
 };
 
-export const useGunCollectionState = (
+export const useGunCollectionState = <T>(
   ref: GunRef,
   opts: Options = {
     appKeys: '',
@@ -236,7 +236,7 @@ export const useGunCollectionState = (
 ) => {
   const { appKeys, sea, interval = 100 } = opts;
   const [gunAppGraph] = useState(ref);
-  const [collection, dispatch] = useSafeReducer<Object>(reducer, {});
+  const [collection, dispatch] = useSafeReducer<Record<string, T>>(reducer, {});
   const handler = useRef(null);
   const isMounted = useIsMounted();
 
@@ -278,7 +278,7 @@ export const useGunCollectionState = (
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const updateInSet = async (nodeID: string, data: any) => {
+  const updateInSet = async (nodeID: string, data: T) => {
     let encryptedData = await encryptData(data, appKeys, sea);
     await new Promise((resolve) =>
       gunAppGraph.get(nodeID).put(encryptedData, () => resolve())
@@ -286,7 +286,7 @@ export const useGunCollectionState = (
     dispatch({ type: 'update', data: { nodeID, ...data } });
   };
 
-  const addToSet = async (data: any, nodeID?: string) => {
+  const addToSet = async (data: T, nodeID?: string) => {
     let encryptedData = await encryptData(data, appKeys, sea);
     if (!nodeID) {
       await new Promise((resolve) =>
@@ -305,5 +305,5 @@ export const useGunCollectionState = (
     );
   };
 
-  return [collection, { addToSet, updateInSet, removeFromSet }];
+  return { collection, addToSet, updateInSet, removeFromSet };
 };

@@ -29,7 +29,7 @@ const Main = ({ user, sea, appKeys }) => {
   // - AppKeys here act as an encryption/decryption key
   // if you don't want to use the same keys for encryption/decryption, you can pass a new set of keys or a random string/passphrase
   // - This node was created using .set()
-  const [todos, { addToSet, updateInSet }] = useGunCollectionState(
+  const { collection: todos, addToSet, updateInSet } = useGunCollectionState(
     user.get('a').get('gun').get('node').get('todos'),
     { appKeys, SEA },
   );

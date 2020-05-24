@@ -1,6 +1,6 @@
 {
   "name": "@altrx/gundb-react-hooks",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "GUNDB hooks for React",
   "source": "src/index.ts",
   "main": "dist/index.js",

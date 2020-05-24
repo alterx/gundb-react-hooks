@@ -28,10 +28,11 @@ export const App = () => {
 const Main = ({ user, sea, appKeys }) => {
   // appKeys here act as an encryption/decryption key
   // if you don't want to use the same keys for encryption/decryption, you can pass a new set of keys or a random string/passphrase
-  const [{ name }, { put }] = useGunState(
+  const { fields: profile, put } = useGunState(
     user.get('a').get('gun').get('node').get('profile'),
     { appKeys, sea },
   );
+  const { name } = profile;
 
   // { name } here is a representation of the .get('profile') node.
   // it contains the latest value on every new render
