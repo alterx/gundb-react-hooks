@@ -19,6 +19,16 @@ export type Options = {
   interval?: number;
 };
 
+export type ActionType = {
+  type: string;
+  data: any;
+};
+
+export type UpdateType = {
+  id: string;
+  data: any;
+};
+
 export const encryptData = async (
   data: any,
   keys: string | KeyPair,
@@ -36,31 +46,31 @@ export const decryptData = async (
 };
 
 const debouncedUpdates = (dispatcher, timeout = 100) => {
-  let actions: any[] = [];
+  let updates: any[] = [];
   let handler;
-  return (action) => {
-    actions.push(action);
+  return (update: UpdateType) => {
+    updates.push(update);
     if (!handler) {
       handler = setTimeout(() => {
-        let newStateSlice = actions.reduce((previousState, { id, data }) => {
+        let newStateSlice = updates.reduce((previousState, { id, data }) => {
           previousState[id] = data;
           return previousState;
         }, {});
         dispatcher(newStateSlice);
-        actions = [];
+        updates = [];
         handler = null;
       }, timeout);
     }
 
     return () => {
       clearTimeout(handler);
-      actions = [];
+      updates = [];
       handler = null;
     };
   };
 };
 
-const reducer = (state, { data, type }) => {
+const reducer = (state: Object, { data, type }: ActionType) => {
   switch (type) {
     case 'add':
       return { ...state, ...data };
@@ -83,8 +93,8 @@ const useIsMounted = () => {
   return isMounted;
 };
 
-const useSafeReducer = (reducer, initialState) => {
-  const [state, dispatch] = useReducer(reducer, initialState);
+const useSafeReducer = <T>(reducer, initialState): [T, Function] => {
+  const [state, dispatch] = useReducer<T>(reducer, initialState);
   const isMounted = useIsMounted();
 
   function safeDispatch(args) {
@@ -162,7 +172,7 @@ export const useGunState = (
 ) => {
   const { appKeys, sea, interval = 100 } = opts;
   const [gunAppGraph] = useState(ref);
-  const [fields, dispatch] = useSafeReducer(reducer, {});
+  const [fields, dispatch] = useSafeReducer<Object>(reducer, {});
   const handler = useRef(null);
   const isMounted = useIsMounted();
 
@@ -226,7 +236,7 @@ export const useGunCollectionState = (
 ) => {
   const { appKeys, sea, interval = 100 } = opts;
   const [gunAppGraph] = useState(ref);
-  const [collection, dispatch] = useSafeReducer(reducer, {});
+  const [collection, dispatch] = useSafeReducer<Object>(reducer, {});
   const handler = useRef(null);
   const isMounted = useIsMounted();
 
