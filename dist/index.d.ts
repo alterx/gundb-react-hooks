@@ -10,7 +10,7 @@ export declare type KeyPair = {
 export declare type Options = {
     appKeys: string | KeyPair;
     sea: any;
-    interval: number;
+    interval?: number;
 };
 export declare const encryptData: (data: any, keys: string | KeyPair, sea: any) => Promise<any>;
 export declare const decryptData: (data: any, keys: string | KeyPair, sea: any) => Promise<any>;
