@@ -1,15 +1,42 @@
 import { useState, useEffect, useReducer, useRef } from 'react';
 
-export const encryptData = async (data, encrypted, keys, sea) => {
-  return encrypted ? sea.encrypt(data, keys) : Promise.resolve(data);
+export type GunStatic = any;
+
+export type GunRef = any;
+
+export type NamespacedRef = any;
+
+export type KeyPair = {
+  pub: string;
+  priv: string;
+  epub: string;
+  epriv: string;
 };
 
-export const decryptData = async (data, encrypted, keys, sea) => {
-  return encrypted ? sea.decrypt(data, keys) : Promise.resolve(data);
+export type Options = {
+  appKeys: string | KeyPair;
+  sea: any;
+  interval: number;
+};
+
+export const encryptData = async (
+  data: any,
+  keys: string | KeyPair,
+  sea: any
+) => {
+  return keys && sea ? sea.encrypt(data, keys) : Promise.resolve(data);
+};
+
+export const decryptData = async (
+  data: any,
+  keys: string | KeyPair,
+  sea: any
+) => {
+  return keys && sea ? sea.decrypt(data, keys) : Promise.resolve(data);
 };
 
 const debouncedUpdates = (dispatcher, timeout = 100) => {
-  let actions = [];
+  let actions: any[] = [];
   let handler;
   return (action) => {
     actions.push(action);
@@ -69,7 +96,7 @@ const useSafeReducer = (reducer, initialState) => {
   return [state, safeDispatch];
 };
 
-export const useGun = (Gun, peerList) => {
+export const useGun = (Gun: GunStatic, peerList: string[]) => {
   const [gun] = useState(
     Gun({
       peers: peerList,
@@ -79,7 +106,7 @@ export const useGun = (Gun, peerList) => {
   return [gun];
 };
 
-export const useGunNamespace = (gun) => {
+export const useGunNamespace = (gun: GunRef) => {
   const [namespace, setNamespace] = useState(null);
   if (!namespace) {
     setNamespace(gun.user());
@@ -87,7 +114,11 @@ export const useGunNamespace = (gun) => {
   return [namespace];
 };
 
-export const useGunKeyAuth = (gun, keys, triggerAuth = true) => {
+export const useGunKeyAuth = (
+  gun: GunRef,
+  keys: KeyPair,
+  triggerAuth: boolean = true
+) => {
   // Will attempt to perform a login (when triggerAuth is set to true),
   // or, if false, returns a namespaced gun node
   const [namespacedGraph] = useGunNamespace(gun);
@@ -106,11 +137,11 @@ export const useGunKeyAuth = (gun, keys, triggerAuth = true) => {
   return [namespacedGraph, isLoggedIn];
 };
 
-export const useGunKeys = (sea, initialValue) => {
+export const useGunKeys = (sea: any, initialValue: any) => {
   const [keys, setKeys] = useState(initialValue);
 
   async function getKeySet() {
-    const pair = await sea.pair();
+    const pair: KeyPair = await sea.pair();
     setKeys(pair);
   }
 
@@ -122,28 +153,28 @@ export const useGunKeys = (sea, initialValue) => {
 };
 
 export const useGunState = (
-  ref,
-  { appKeys, sea, interval = 100, encrypted = true }
+  ref: GunRef,
+  opts: Options = {
+    appKeys: '',
+    sea: null,
+    interval: 100,
+  }
 ) => {
+  const { appKeys, sea, interval } = opts;
   const [gunAppGraph] = useState(ref);
   const [fields, dispatch] = useSafeReducer(reducer, {});
   const handler = useRef(null);
   const isMounted = useIsMounted();
 
   useEffect(() => {
-    const debouncedHandlers = [];
+    const debouncedHandlers: Function[] = [];
     if (isMounted.current) {
       const updater = debouncedUpdates((data) => {
         dispatch({ type: 'add', data });
       }, interval);
 
       gunAppGraph.on(async (encryptedField, nodeID, message, event) => {
-        let decryptedField = await decryptData(
-          encryptedField,
-          encrypted,
-          appKeys,
-          sea
-        );
+        let decryptedField = await decryptData(encryptedField, appKeys, sea);
         Object.keys(decryptedField).forEach((key) => {
           let cleanFn = updater({ id: key, data: decryptedField[key] });
           debouncedHandlers.push(cleanFn);
@@ -171,7 +202,7 @@ export const useGunState = (
 
   // Working with root node fields
   const put = async (data) => {
-    let encryptedData = await encryptData(data, encrypted, appKeys, sea);
+    let encryptedData = await encryptData(data, appKeys, sea);
     await gunAppGraph.put(encryptedData);
   };
 
@@ -188,9 +219,14 @@ export const useGunState = (
 };
 
 export const useGunCollectionState = (
-  ref,
-  { appKeys, sea, interval = 100, encrypted = true }
+  ref: GunRef,
+  opts: Options = {
+    appKeys: '',
+    sea: null,
+    interval: 100,
+  }
 ) => {
+  const { appKeys, sea, interval } = opts;
   const [gunAppGraph] = useState(ref);
   const [collection, dispatch] = useSafeReducer(reducer, {});
   const handler = useRef(null);
@@ -198,14 +234,14 @@ export const useGunCollectionState = (
 
   // Working with Sets
   useEffect(() => {
-    const debouncedHandlers = [];
+    const debouncedHandlers: Function[] = [];
     if (isMounted.current) {
       const updater = debouncedUpdates((data) => {
         dispatch({ type: 'add', data });
       }, interval);
 
       gunAppGraph.map().on(async (encryptedNode, nodeID, message, event) => {
-        let item = await decryptData(encryptedNode, encrypted, appKeys, sea);
+        let item = await decryptData(encryptedNode, appKeys, sea);
         if (item) {
           let cleanFn = updater({
             id: nodeID,
@@ -235,13 +271,13 @@ export const useGunCollectionState = (
   }, []);
 
   const updateInSet = async (nodeID, data) => {
-    let encryptedData = await encryptData(data, encrypted, appKeys, sea);
+    let encryptedData = await encryptData(data, appKeys, sea);
     await gunAppGraph.get(nodeID).put(encryptedData);
     dispatch({ type: 'update', data: { nodeID, ...data } });
   };
 
   const addToSet = async (data) => {
-    let encryptedData = await encryptData(data, encrypted, appKeys, sea);
+    let encryptedData = await encryptData(data, appKeys, sea);
     await gunAppGraph.set(encryptedData);
   };
 
