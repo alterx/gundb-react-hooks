@@ -16,7 +16,7 @@ export type KeyPair = {
 export type Options = {
   appKeys: string | KeyPair;
   sea: any;
-  interval: number;
+  interval?: number;
 };
 
 export const encryptData = async (
@@ -160,7 +160,7 @@ export const useGunState = (
     interval: 100,
   }
 ) => {
-  const { appKeys, sea, interval } = opts;
+  const { appKeys, sea, interval = 100 } = opts;
   const [gunAppGraph] = useState(ref);
   const [fields, dispatch] = useSafeReducer(reducer, {});
   const handler = useRef(null);
@@ -226,7 +226,7 @@ export const useGunCollectionState = (
     interval: 100,
   }
 ) => {
-  const { appKeys, sea, interval } = opts;
+  const { appKeys, sea, interval = 100 } = opts;
   const [gunAppGraph] = useState(ref);
   const [collection, dispatch] = useSafeReducer(reducer, {});
   const handler = useRef(null);
