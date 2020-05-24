@@ -201,21 +201,19 @@ export const useGunState = (
   }, []);
 
   // Working with root node fields
-  const put = async (data) => {
+  const put = async (data: any) => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await gunAppGraph.put(encryptedData);
+    await new Promise((resolve) =>
+      gunAppGraph.put(encryptedData, () => resolve())
+    );
   };
 
-  const remove = async (field) => {
-    await gunAppGraph.put(null);
+  const remove = async (field: string) => {
+    await new Promise((resolve) => gunAppGraph.put(null, () => resolve()));
     dispatch({ type: 'remove', data: field });
   };
 
-  return [
-    fields,
-    { put, remove },
-    gunAppGraph, // the actual graph is sent in case something advanced needs to be done
-  ];
+  return [fields, { put, remove }];
 };
 
 export const useGunCollectionState = (
@@ -270,25 +268,32 @@ export const useGunCollectionState = (
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const updateInSet = async (nodeID, data) => {
+  const updateInSet = async (nodeID: string, data: any) => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await gunAppGraph.get(nodeID).put(encryptedData);
+    await new Promise((resolve) =>
+      gunAppGraph.get(nodeID).put(encryptedData, () => resolve())
+    );
     dispatch({ type: 'update', data: { nodeID, ...data } });
   };
 
-  const addToSet = async (data) => {
+  const addToSet = async (data: any, nodeID?: string) => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await gunAppGraph.set(encryptedData);
+    if (!nodeID) {
+      await new Promise((resolve) =>
+        gunAppGraph.set(encryptedData, () => resolve())
+      );
+    } else {
+      await new Promise((resolve) =>
+        gunAppGraph.get(nodeID).put(encryptedData, () => resolve())
+      );
+    }
   };
 
-  const removeFromSet = async (nodeID) => {
-    await gunAppGraph.get(nodeID).put(null);
-    dispatch({ type: 'remove', data: nodeID });
+  const removeFromSet = async (nodeID: string) => {
+    await new Promise((resolve) =>
+      gunAppGraph.get(nodeID).put(null, () => resolve())
+    );
   };
 
-  return [
-    collection,
-    { addToSet, updateInSet, removeFromSet },
-    gunAppGraph, // the actual graph is sent in case something advanced needs to be done
-  ];
+  return [collection, { addToSet, updateInSet, removeFromSet }];
 };
