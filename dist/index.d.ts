@@ -22,6 +22,10 @@ export declare type UpdateType = {
 };
 export declare const encryptData: (data: any, keys: string | KeyPair, sea: any) => Promise<any>;
 export declare const decryptData: (data: any, keys: string | KeyPair, sea: any) => Promise<any>;
+export declare const debouncedUpdates: (dispatcher: any, timeout?: number) => (update: UpdateType) => () => void;
+export declare const reducer: (state: {}, { data, type }: ActionType) => any;
+export declare const useIsMounted: () => any;
+export declare const useSafeReducer: <T>(reducer: any, initialState: any) => [T, Function];
 export declare const useGun: (Gun: any, peerList: string[]) => any[];
 export declare const useGunNamespace: (gun: any) => any[];
 export declare const useGunKeyAuth: (gun: any, keys: KeyPair, triggerAuth?: boolean) => any[];

@@ -45,7 +45,7 @@ export const decryptData = async (
   return keys && sea ? sea.decrypt(data, keys) : Promise.resolve(data);
 };
 
-const debouncedUpdates = (dispatcher, timeout = 100) => {
+export const debouncedUpdates = (dispatcher, timeout = 100) => {
   let updates: any[] = [];
   let handler;
   return (update: UpdateType) => {
@@ -70,7 +70,7 @@ const debouncedUpdates = (dispatcher, timeout = 100) => {
   };
 };
 
-const reducer = (state: {}, { data, type }: ActionType) => {
+export const reducer = (state: {}, { data, type }: ActionType) => {
   switch (type) {
     case 'add':
       return { ...state, ...data };
@@ -84,7 +84,7 @@ const reducer = (state: {}, { data, type }: ActionType) => {
   }
 };
 
-const useIsMounted = () => {
+export const useIsMounted = () => {
   const isMounted = useRef(false);
   useEffect(() => {
     isMounted.current = true;
@@ -93,7 +93,7 @@ const useIsMounted = () => {
   return isMounted;
 };
 
-const useSafeReducer = <T>(reducer, initialState): [T, Function] => {
+export const useSafeReducer = <T>(reducer, initialState): [T, Function] => {
   const [state, dispatch] = useReducer<T>(reducer, initialState);
   const isMounted = useIsMounted();
 
