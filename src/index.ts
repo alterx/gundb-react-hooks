@@ -14,9 +14,10 @@ export type KeyPair = {
 };
 
 export type Options = {
-  appKeys: string | KeyPair;
-  sea: any;
+  appKeys?: undefined | string | KeyPair;
+  sea?: any;
   interval?: number;
+  useOpen?: boolean;
 };
 
 export type ActionType = {
@@ -31,7 +32,7 @@ export type UpdateType = {
 
 export const encryptData = async (
   data: any,
-  keys: string | KeyPair,
+  keys: undefined | string | KeyPair,
   sea: any
 ) => {
   return keys && sea ? sea.encrypt(data, keys) : Promise.resolve(data);
@@ -39,7 +40,7 @@ export const encryptData = async (
 
 export const decryptData = async (
   data: any,
-  keys: string | KeyPair,
+  keys: undefined | string | KeyPair,
   sea: any
 ) => {
   return keys && sea ? sea.decrypt(data, keys) : Promise.resolve(data);
@@ -168,9 +169,10 @@ export const useGunState = <T>(
     appKeys: '',
     sea: null,
     interval: 100,
+    useOpen: false,
   }
 ) => {
-  const { appKeys, sea, interval = 100 } = opts;
+  const { appKeys, sea, interval = 100, useOpen = false } = opts;
   const [gunAppGraph] = useState(ref);
   const [fields, dispatch] = useSafeReducer<T>(reducer, {});
   const handler = useRef(null);
@@ -183,7 +185,7 @@ export const useGunState = <T>(
         dispatch({ type: 'add', data });
       }, interval);
 
-      gunAppGraph.on(async (encryptedField, nodeID, message, event) => {
+      const gunCb = async (encryptedField, nodeID, message, event) => {
         let decryptedField = await decryptData(encryptedField, appKeys, sea);
         Object.keys(decryptedField).forEach((key) => {
           let cleanFn = updater({ id: key, data: decryptedField[key] });
@@ -193,7 +195,17 @@ export const useGunState = <T>(
         if (!handler.current) {
           handler.current = event;
         }
-      });
+      };
+
+      if (useOpen) {
+        if (!gunAppGraph.open) {
+          throw new Error('Please include gun/lib/open.');
+        } else {
+          gunAppGraph.open(gunCb);
+        }
+      } else {
+        gunAppGraph.on(gunCb);
+      }
     }
 
     return () => {
@@ -236,9 +248,10 @@ export const useGunCollectionState = <T>(
     appKeys: '',
     sea: null,
     interval: 100,
+    useOpen: false,
   }
 ) => {
-  const { appKeys, sea, interval = 100 } = opts;
+  const { appKeys, sea, interval = 100, useOpen } = opts;
   const [gunAppGraph] = useState(ref);
   const [collection, dispatch] = useSafeReducer<Record<string, T>>(reducer, {});
   const handler = useRef(null);
@@ -252,7 +265,7 @@ export const useGunCollectionState = <T>(
         dispatch({ type: 'add', data });
       }, interval);
 
-      gunAppGraph.map().on(async (encryptedNode, nodeID, message, event) => {
+      const gunCb = async (encryptedNode, nodeID, message, event) => {
         let item = await decryptData(encryptedNode, appKeys, sea);
         if (item) {
           let cleanFn = updater({
@@ -265,7 +278,17 @@ export const useGunCollectionState = <T>(
         if (!handler.current) {
           handler.current = event;
         }
-      });
+      };
+
+      if (useOpen) {
+        if (!gunAppGraph.open) {
+          throw new Error('Please include gun/lib/open.');
+        } else {
+          gunAppGraph.open(gunCb);
+        }
+      } else {
+        gunAppGraph.on(gunCb);
+      }
     }
 
     return () => {

@@ -8,9 +8,10 @@ export declare type KeyPair = {
     epriv: string;
 };
 export declare type Options = {
-    appKeys: string | KeyPair;
-    sea: any;
+    appKeys?: undefined | string | KeyPair;
+    sea?: any;
     interval?: number;
+    useOpen?: boolean;
 };
 export declare type ActionType = {
     type: string;
@@ -20,8 +21,8 @@ export declare type UpdateType = {
     id: string;
     data: any;
 };
-export declare const encryptData: (data: any, keys: string | KeyPair, sea: any) => Promise<any>;
-export declare const decryptData: (data: any, keys: string | KeyPair, sea: any) => Promise<any>;
+export declare const encryptData: (data: any, keys: string | KeyPair | undefined, sea: any) => Promise<any>;
+export declare const decryptData: (data: any, keys: string | KeyPair | undefined, sea: any) => Promise<any>;
 export declare const debouncedUpdates: (dispatcher: any, timeout?: number) => (update: UpdateType) => () => void;
 export declare const reducer: (state: {}, { data, type }: ActionType) => any;
 export declare const useIsMounted: () => any;
