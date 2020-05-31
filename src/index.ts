@@ -284,10 +284,10 @@ export const useGunCollectionState = <T>(
         if (!gunAppGraph.open) {
           throw new Error('Please include gun/lib/open.');
         } else {
-          gunAppGraph.open(gunCb);
+          gunAppGraph.map().open(gunCb);
         }
       } else {
-        gunAppGraph.on(gunCb);
+        gunAppGraph.map().on(gunCb);
       }
     }
 
