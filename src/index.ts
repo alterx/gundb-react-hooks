@@ -227,14 +227,14 @@ export const useGunState = <T>(
     let encryptedData = await encryptData(data, appKeys, sea);
     await new Promise((resolve, reject) =>
       gunAppGraph.put(encryptedData, (ack) =>
-        ack.ok ? resolve() : reject(ack.err)
+        ack.err ? reject(ack.err) : resolve()
       )
     );
   };
 
   const remove = async (field: string) => {
     await new Promise((resolve, reject) =>
-      gunAppGraph.put(null, (ack) => (ack.ok ? resolve() : reject(ack.err)))
+      gunAppGraph.put(null, (ack) => (ack.err ? reject(ack.err) : resolve()))
     );
     dispatch({ type: 'remove', data: field });
   };
@@ -310,7 +310,7 @@ export const useGunCollectionState = <T>(
     await new Promise((resolve, reject) =>
       gunAppGraph
         .get(nodeID)
-        .put(encryptedData, (ack) => (ack.ok ? resolve() : reject(ack.err)))
+        .put(encryptedData, (ack) => (ack.err ? reject(ack.err) : resolve()))
     );
     dispatch({ type: 'update', data: { nodeID, ...data } });
   };
@@ -320,14 +320,14 @@ export const useGunCollectionState = <T>(
     if (!nodeID) {
       await new Promise((resolve, reject) =>
         gunAppGraph.set(encryptedData, (ack) =>
-          ack.ok ? resolve() : reject(ack.err)
+          ack.err ? reject(ack.err) : resolve()
         )
       );
     } else {
       await new Promise((resolve, reject) =>
         gunAppGraph
           .get(nodeID)
-          .put(encryptedData, (ack) => (ack.ok ? resolve() : reject(ack.err)))
+          .put(encryptedData, (ack) => (ack.err ? reject(ack.err) : resolve()))
       );
     }
   };
@@ -336,7 +336,7 @@ export const useGunCollectionState = <T>(
     await new Promise((resolve, reject) =>
       gunAppGraph
         .get(nodeID)
-        .put(null, (ack) => (ack.ok ? resolve() : reject(ack.err)))
+        .put(null, (ack) => (ack.err ? reject(ack.err) : resolve()))
     );
   };
 
