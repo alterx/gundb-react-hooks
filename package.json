@@ -1,6 +1,6 @@
 {
   "name": "@altrx/gundb-react-hooks",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "GUNDB hooks for React/Preact",
   "browser": "./dist/gundb-react-hooks.umd.js",
   "umd:main": "./dist/gundb-react-hooks.umd.js",
@@ -53,7 +53,8 @@
     "S3"
   ],
   "files": [
-    "dist"
+    "dist",
+    "preact/dist"
   ],
   "scripts": {
     "build": "rimraf dist && npm run build:preact && npm run build:react",
