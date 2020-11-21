@@ -1,18 +1,28 @@
 {
   "name": "@altrx/gundb-react-hooks",
-  "version": "0.6.0",
-  "description": "GUNDB hooks for React",
-  "source": "src/index.ts",
-  "main": "dist/index.js",
-  "module": "dist/index.module.js",
-  "unpkg": "dist/index.umd.js",
-  "types": "dist/index.d.ts",
+  "version": "0.7.0",
+  "description": "GUNDB hooks for React/Preact",
+  "browser": "./dist/gundb-react-hooks.umd.js",
+  "umd:main": "./dist/gundb-react-hooks.umd.js",
+  "jsnext:main": "./dist/gundb-react-hooks.modern.js",
+  "typings": "./dist/gundb-react-hooks.d.ts",
+  "source": "./src/gundb-react-hooks.ts",
+  "main": "./dist/gundb-react-hooks.js",
+  "module": "./dist/gundb-react-hooks.module.js",
+  "unpkg": "./dist/gundb-react-hooks.umd.js",
+  "types": "./dist/gundb-react-hooks.d.ts",
   "exports": {
     ".": {
-      "browser": "./dist/index.modern.js",
-      "umd": "./dist/index.umd.js",
-      "import": "./dist/index.module.js",
-      "require": "./dist/index.js"
+      "browser": "./dist/gundb-react-hooks.modern.js",
+      "umd": "./dist/gundb-react-hooks.umd.js",
+      "import": "./dist/gundb-react-hooks.module.js",
+      "require": "./dist/gundb-react-hooks.js"
+    },
+    "./preact": {
+      "browser": "./preact/dist/gundb-react-hooks.modern.js",
+      "umd": "./preact/dist/gundb-react-hooks.umd.js",
+      "import": "./preact/dist/gundb-react-hooks.module.js",
+      "require": "./preact/dist/gundb-react-hooks.js"
     }
   },
   "repository": {
@@ -20,6 +30,8 @@
     "url": "git+https://github.com/alterx/gundb-react-hooks.git"
   },
   "keywords": [
+    "preact",
+    "react",
     "gun",
     "gunDB",
     "graph",
@@ -44,7 +56,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "microbundle",
+    "build": "rimraf dist && npm run build:preact && npm run build:react",
+    "build:react": "microbundle --define process.env.NODE_ENV=production --external react --name index --no-compress --output dist/",
+    "build:preact": "microbundle --define process.env.NODE_ENV=production --external preact --name index --no-compress --output preact/dist --alias react=preact/hooks",
     "dev": "microbundle watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -61,7 +75,8 @@
     "prettier": "^2.0.5",
     "pretty-quick": "^2.0.1",
     "react": "^16.13.1",
-    "react-dom": "^16.13.1"
+    "react-dom": "^16.13.1",
+    "rimraf": "^3.0.2"
   },
   "husky": {
     "hooks": {

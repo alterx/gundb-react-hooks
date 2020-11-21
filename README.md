@@ -11,6 +11,10 @@ Use `pnpm`, `npm` or `yarn` to install the dependencies:
 $ npm i @altrx/gundb-react-hooks
 ```
 
+## Preact
+
+If you need support for [Preact](https://preactjs.com/) you can import from `@altrx/gundb-react-hooks/preact` instead.
+
 ## Hooks
 
 - [useGun](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGun.md)
