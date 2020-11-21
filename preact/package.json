@@ -1,6 +1,6 @@
 {
   "name": "@altrx/gundb-react-hooks",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "GUNDB hooks for React/Preact",
   "scripts": {},
   "repository": {
@@ -13,13 +13,16 @@
     "url": "https://github.com/alterx/gundb-react-hooks/issues"
   },
   "sideEffects": false,
-  "browser": "./dist/gundb-react-hooks.umd.js",
-  "umd:main": "./dist/gundb-react-hooks.umd.js",
-  "jsnext:main": "./dist/gundb-react-hooks.modern.js",
-  "typings": "./dist/gundb-react-hooks.d.ts",
-  "source": "../src/gundb-react-hooks.ts",
-  "main": "./dist/gundb-react-hooks.js",
-  "module": "./dist/gundb-react-hooks.module.js",
-  "unpkg": "./dist/gundb-react-hooks.umd.js",
-  "types": "./dist/gundb-react-hooks.d.ts"
+  "browser": "dist/gundb-react-hooks.umd.js",
+  "umd:main": "dist/gundb-react-hooks.umd.js",
+  "jsnext:main": "dist/gundb-react-hooks.modern.js",
+  "main": "dist/gundb-react-hooks.js",
+  "module": "dist/gundb-react-hooks.module.js",
+  "unpkg": "dist/gundb-react-hooks.umd.js",
+  "source": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "typings": "./dist/index.d.ts",
+  "peerDependencies": {
+    "preact": ">=10"
+  }
 }

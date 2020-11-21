@@ -93,10 +93,8 @@ const useSafeReducer = (reducer, initialState) => {
 
   return [state, safeDispatch];
 };
-const useGun = (Gun, peerList) => {
-  const [gun] = useState(Gun({
-    peers: peerList
-  }));
+const useGun = (Gun, opts) => {
+  const [gun] = useState(Gun(opts));
   return [gun];
 };
 const useGunNamespace = gun => {

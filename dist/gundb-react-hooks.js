@@ -109,10 +109,8 @@ var useSafeReducer = function useSafeReducer(reducer, initialState) {
 
   return [state, safeDispatch];
 };
-var useGun = function useGun(Gun, peerList) {
-  var _useState = react.useState(Gun({
-    peers: peerList
-  })),
+var useGun = function useGun(Gun, opts) {
+  var _useState = react.useState(Gun(opts)),
       gun = _useState[0];
 
   return [gun];

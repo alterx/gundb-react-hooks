@@ -30,6 +30,22 @@ export type UpdateType = {
   data: any;
 };
 
+export interface GunOptions
+  extends Partial<{
+    file: string;
+    web: any;
+    s3: {
+      key: any;
+      secret: any;
+      bucket: any;
+    };
+    peers: string[] | Record<string, {}>;
+    radisk: boolean;
+    localStorage: boolean;
+    uuid(): string;
+    [key: string]: any;
+  }> {}
+
 export const encryptData = async (
   data: any,
   keys: undefined | string | KeyPair,
@@ -107,12 +123,8 @@ export const useSafeReducer = <T>(reducer, initialState): [T, Function] => {
   return [state, safeDispatch];
 };
 
-export const useGun = (Gun: GunStatic, peerList: string[]) => {
-  const [gun] = useState(
-    Gun({
-      peers: peerList,
-    })
-  );
+export const useGun = (Gun: GunStatic, opts: GunOptions) => {
+  const [gun] = useState(Gun(opts));
 
   return [gun];
 };

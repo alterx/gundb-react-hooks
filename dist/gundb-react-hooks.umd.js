@@ -1,7 +1,7 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('react')) :
   typeof define === 'function' && define.amd ? define(['exports', 'react'], factory) :
-  (global = global || self, factory(global.index = {}, global.react));
+  (global = global || self, factory(global['@altrx/gundb-react-hooks'] = {}, global.react));
 }(this, (function (exports, react) {
   function _extends() {
     _extends = Object.assign || function (target) {
@@ -112,10 +112,8 @@
 
     return [state, safeDispatch];
   };
-  var useGun = function useGun(Gun, peerList) {
-    var _useState = react.useState(Gun({
-      peers: peerList
-    })),
+  var useGun = function useGun(Gun, opts) {
+    var _useState = react.useState(Gun(opts)),
         gun = _useState[0];
 
     return [gun];

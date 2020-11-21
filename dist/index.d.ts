@@ -21,13 +21,28 @@ export declare type UpdateType = {
     id: string;
     data: any;
 };
+export interface GunOptions extends Partial<{
+    file: string;
+    web: any;
+    s3: {
+        key: any;
+        secret: any;
+        bucket: any;
+    };
+    peers: string[] | Record<string, {}>;
+    radisk: boolean;
+    localStorage: boolean;
+    uuid(): string;
+    [key: string]: any;
+}> {
+}
 export declare const encryptData: (data: any, keys: undefined | string | KeyPair, sea: any) => Promise<any>;
 export declare const decryptData: (data: any, keys: undefined | string | KeyPair, sea: any) => Promise<any>;
 export declare const debouncedUpdates: (dispatcher: any, timeout?: number) => (update: UpdateType) => () => void;
 export declare const reducer: (state: {}, { data, type }: ActionType) => any;
 export declare const useIsMounted: () => any;
 export declare const useSafeReducer: <T>(reducer: any, initialState: any) => [T, Function];
-export declare const useGun: (Gun: GunStatic, peerList: string[]) => any[];
+export declare const useGun: (Gun: GunStatic, opts: GunOptions) => any[];
 export declare const useGunNamespace: (gun: GunRef) => any[];
 export declare const useGunKeyAuth: (gun: GunRef, keys: KeyPair, triggerAuth?: boolean) => any[];
 export declare const useGunKeys: (sea: any, initialValue: any) => any[];

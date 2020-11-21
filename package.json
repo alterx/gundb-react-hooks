@@ -1,16 +1,16 @@
 {
   "name": "@altrx/gundb-react-hooks",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "GUNDB hooks for React/Preact",
   "browser": "./dist/gundb-react-hooks.umd.js",
   "umd:main": "./dist/gundb-react-hooks.umd.js",
   "jsnext:main": "./dist/gundb-react-hooks.modern.js",
-  "typings": "./dist/gundb-react-hooks.d.ts",
-  "source": "./src/gundb-react-hooks.ts",
   "main": "./dist/gundb-react-hooks.js",
   "module": "./dist/gundb-react-hooks.module.js",
   "unpkg": "./dist/gundb-react-hooks.umd.js",
-  "types": "./dist/gundb-react-hooks.d.ts",
+  "source": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "typings": "./dist/index.d.ts",
   "exports": {
     ".": {
       "browser": "./dist/gundb-react-hooks.modern.js",
@@ -57,8 +57,8 @@
   ],
   "scripts": {
     "build": "rimraf dist && npm run build:preact && npm run build:react",
-    "build:react": "microbundle --define process.env.NODE_ENV=production --external react --name index --no-compress --output dist/",
-    "build:preact": "microbundle --define process.env.NODE_ENV=production --external preact --name index --no-compress --output preact/dist --alias react=preact/hooks",
+    "build:react": "microbundle --define process.env.NODE_ENV=production --external react --name @altrx/gundb-react-hooks --no-compress --output dist/",
+    "build:preact": "microbundle --define process.env.NODE_ENV=production --external preact --name @altrx/gundb-react-hooks --no-compress --output preact/dist --alias react=preact/hooks",
     "dev": "microbundle watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
