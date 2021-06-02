@@ -237,7 +237,7 @@ export const useGunState = <T>(
   // Working with root node fields
   const put = async (data: T) => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await new Promise((resolve, reject) =>
+    await new Promise<void>((resolve, reject) =>
       gunAppGraph.put(encryptedData, (ack) =>
         ack.err ? reject(ack.err) : resolve()
       )
@@ -245,7 +245,7 @@ export const useGunState = <T>(
   };
 
   const remove = async (field: string) => {
-    await new Promise((resolve, reject) =>
+    await new Promise<void>((resolve, reject) =>
       gunAppGraph.put(null, (ack) => (ack.err ? reject(ack.err) : resolve()))
     );
     dispatch({ type: 'remove', data: field });
@@ -319,7 +319,7 @@ export const useGunCollectionState = <T>(
 
   const updateInSet = async (nodeID: string, data: T) => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await new Promise((resolve, reject) =>
+    await new Promise<void>((resolve, reject) =>
       gunAppGraph
         .get(nodeID)
         .put(encryptedData, (ack) => (ack.err ? reject(ack.err) : resolve()))
@@ -330,13 +330,13 @@ export const useGunCollectionState = <T>(
   const addToSet = async (data: T, nodeID?: string) => {
     let encryptedData = await encryptData(data, appKeys, sea);
     if (!nodeID) {
-      await new Promise((resolve, reject) =>
+      await new Promise<void>((resolve, reject) =>
         gunAppGraph.set(encryptedData, (ack) =>
           ack.err ? reject(ack.err) : resolve()
         )
       );
     } else {
-      await new Promise((resolve, reject) =>
+      await new Promise<void>((resolve, reject) =>
         gunAppGraph
           .get(nodeID)
           .put(encryptedData, (ack) => (ack.err ? reject(ack.err) : resolve()))
@@ -345,7 +345,7 @@ export const useGunCollectionState = <T>(
   };
 
   const removeFromSet = async (nodeID: string) => {
-    await new Promise((resolve, reject) =>
+    await new Promise<void>((resolve, reject) =>
       gunAppGraph
         .get(nodeID)
         .put(null, (ack) => (ack.err ? reject(ack.err) : resolve()))
