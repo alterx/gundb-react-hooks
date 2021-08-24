@@ -94,10 +94,10 @@ const useSafeReducer = (reducer, initialState) => {
   return [state, safeDispatch];
 };
 const useGun = (Gun, opts) => {
-  const [gun, setGun] = useState(Gun(opts));
+  const [gun, setGun] = useState(Gun(_extends({}, opts)));
   useEffect(() => {
     if (opts) {
-      setGun(_extends({}, opts));
+      setGun(Gun(_extends({}, opts)));
     }
   }, [Gun, opts]);
   return gun;

@@ -124,11 +124,11 @@ export const useSafeReducer = <T>(reducer, initialState): [T, Function] => {
 };
 
 export const useGun = (Gun: GunStatic, opts: GunOptions) => {
-  const [gun, setGun] = useState(Gun(opts));
+  const [gun, setGun] = useState(Gun({ ...opts }));
 
   useEffect(() => {
     if (opts) {
-      setGun({ ...opts });
+      setGun(Gun({ ...opts }));
     }
   }, [Gun, opts]);
 

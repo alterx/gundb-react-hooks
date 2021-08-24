@@ -110,13 +110,13 @@ var useSafeReducer = function useSafeReducer(reducer, initialState) {
   return [state, safeDispatch];
 };
 var useGun = function useGun(Gun, opts) {
-  var _useState = react.useState(Gun(opts)),
+  var _useState = react.useState(Gun(_extends({}, opts))),
       gun = _useState[0],
       setGun = _useState[1];
 
   react.useEffect(function () {
     if (opts) {
-      setGun(_extends({}, opts));
+      setGun(Gun(_extends({}, opts)));
     }
   }, [Gun, opts]);
   return gun;
