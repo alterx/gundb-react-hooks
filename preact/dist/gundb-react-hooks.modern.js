@@ -94,22 +94,27 @@ const useSafeReducer = (reducer, initialState) => {
   return [state, safeDispatch];
 };
 const useGun = (Gun, opts) => {
-  const [gun] = useState(Gun(opts));
-  return [gun];
+  const [gun, setGun] = useState(Gun(opts));
+  useEffect(() => {
+    if (opts) {
+      setGun(_extends({}, opts));
+    }
+  }, [Gun, opts]);
+  return gun;
 };
-const useGunNamespace = gun => {
+const useGunNamespace = (gun, soul) => {
   const [namespace, setNamespace] = useState(null);
-
-  if (!namespace) {
-    setNamespace(gun.user());
-  }
-
-  return [namespace];
+  useEffect(() => {
+    if (gun && !namespace) {
+      setNamespace(soul ? gun.user(soul) : gun.user());
+    }
+  }, [namespace, gun, soul]);
+  return namespace;
 };
 const useGunKeyAuth = (gun, keys, triggerAuth = true) => {
   // Will attempt to perform a login (when triggerAuth is set to true),
   // or, if false, returns a namespaced gun node
-  const [namespacedGraph] = useGunNamespace(gun);
+  const namespacedGraph = useGunNamespace(gun);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   gun.on('auth', () => {
     setIsLoggedIn(true);
@@ -121,19 +126,23 @@ const useGunKeyAuth = (gun, keys, triggerAuth = true) => {
   }, [triggerAuth, namespacedGraph, keys]);
   return [namespacedGraph, isLoggedIn];
 };
-const useGunKeys = (sea, initialValue) => {
-  const [keys, setKeys] = useState(initialValue);
+const useGunKeys = (sea, existingKeys) => {
+  const [newKeys, setNewKeys] = useState(existingKeys);
+  useEffect(() => {
+    async function getKeySet() {
+      const pair = await sea.pair();
+      setNewKeys(pair);
+    }
 
-  async function getKeySet() {
-    const pair = await sea.pair();
-    setKeys(pair);
-  }
+    if (!newKeys && !existingKeys) {
+      getKeySet();
+    }
 
-  if (!keys) {
-    getKeySet();
-  }
-
-  return [keys, setKeys];
+    if (existingKeys) {
+      setNewKeys(existingKeys);
+    }
+  }, [existingKeys, newKeys, sea]);
+  return newKeys;
 };
 const useGunState = (ref, opts = {
   appKeys: '',
@@ -204,11 +213,11 @@ const useGunState = (ref, opts = {
 
   const put = async data => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await new Promise((resolve, reject) => gunAppGraph.put(encryptedData, ack => ack.err ? reject(ack.err) : resolve()));
+    await new Promise((resolve, reject) => gunAppGraph.put(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
   };
 
   const remove = async field => {
-    await new Promise((resolve, reject) => gunAppGraph.put(null, ack => ack.err ? reject(ack.err) : resolve()));
+    await new Promise((resolve, reject) => gunAppGraph.put(null, ack => ack.err ? reject(ack.err) : resolve(field)));
     dispatch({
       type: 'remove',
       data: field
@@ -294,7 +303,7 @@ const useGunCollectionState = (ref, opts = {
 
   const updateInSet = async (nodeID, data) => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await new Promise((resolve, reject) => gunAppGraph.get(nodeID).put(encryptedData, ack => ack.err ? reject(ack.err) : resolve()));
+    await new Promise((resolve, reject) => gunAppGraph.get(nodeID).put(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
     dispatch({
       type: 'update',
       data: _extends({
@@ -307,14 +316,14 @@ const useGunCollectionState = (ref, opts = {
     let encryptedData = await encryptData(data, appKeys, sea);
 
     if (!nodeID) {
-      await new Promise((resolve, reject) => gunAppGraph.set(encryptedData, ack => ack.err ? reject(ack.err) : resolve()));
+      await new Promise((resolve, reject) => gunAppGraph.set(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
     } else {
-      await new Promise((resolve, reject) => gunAppGraph.get(nodeID).put(encryptedData, ack => ack.err ? reject(ack.err) : resolve()));
+      await new Promise((resolve, reject) => gunAppGraph.get(nodeID).put(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
     }
   };
 
   const removeFromSet = async nodeID => {
-    await new Promise((resolve, reject) => gunAppGraph.get(nodeID).put(null, ack => ack.err ? reject(ack.err) : resolve()));
+    await new Promise((resolve, reject) => gunAppGraph.get(nodeID).put(null, ack => ack.err ? reject(ack.err) : resolve(nodeID)));
   };
 
   return {

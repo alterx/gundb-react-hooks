@@ -111,20 +111,27 @@ var useSafeReducer = function useSafeReducer(reducer, initialState) {
 };
 var useGun = function useGun(Gun, opts) {
   var _useState = react.useState(Gun(opts)),
-      gun = _useState[0];
+      gun = _useState[0],
+      setGun = _useState[1];
 
-  return [gun];
+  react.useEffect(function () {
+    if (opts) {
+      setGun(_extends({}, opts));
+    }
+  }, [Gun, opts]);
+  return gun;
 };
-var useGunNamespace = function useGunNamespace(gun) {
+var useGunNamespace = function useGunNamespace(gun, soul) {
   var _useState2 = react.useState(null),
       namespace = _useState2[0],
       setNamespace = _useState2[1];
 
-  if (!namespace) {
-    setNamespace(gun.user());
-  }
-
-  return [namespace];
+  react.useEffect(function () {
+    if (gun && !namespace) {
+      setNamespace(soul ? gun.user(soul) : gun.user());
+    }
+  }, [namespace, gun, soul]);
+  return namespace;
 };
 var useGunKeyAuth = function useGunKeyAuth(gun, keys, triggerAuth) {
   if (triggerAuth === void 0) {
@@ -133,8 +140,7 @@ var useGunKeyAuth = function useGunKeyAuth(gun, keys, triggerAuth) {
 
   // Will attempt to perform a login (when triggerAuth is set to true),
   // or, if false, returns a namespaced gun node
-  var _useGunNamespace = useGunNamespace(gun),
-      namespacedGraph = _useGunNamespace[0];
+  var namespacedGraph = useGunNamespace(gun);
 
   var _useState3 = react.useState(false),
       isLoggedIn = _useState3[0],
@@ -150,26 +156,31 @@ var useGunKeyAuth = function useGunKeyAuth(gun, keys, triggerAuth) {
   }, [triggerAuth, namespacedGraph, keys]);
   return [namespacedGraph, isLoggedIn];
 };
-var useGunKeys = function useGunKeys(sea, initialValue) {
-  var getKeySet = function getKeySet() {
-    try {
-      return Promise.resolve(sea.pair()).then(function (pair) {
-        setKeys(pair);
-      });
-    } catch (e) {
-      return Promise.reject(e);
+var useGunKeys = function useGunKeys(sea, existingKeys) {
+  var _useState4 = react.useState(existingKeys),
+      newKeys = _useState4[0],
+      setNewKeys = _useState4[1];
+
+  react.useEffect(function () {
+    var getKeySet = function getKeySet() {
+      try {
+        return Promise.resolve(sea.pair()).then(function (pair) {
+          setNewKeys(pair);
+        });
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    };
+
+    if (!newKeys && !existingKeys) {
+      getKeySet();
     }
-  };
 
-  var _useState4 = react.useState(initialValue),
-      keys = _useState4[0],
-      setKeys = _useState4[1];
-
-  if (!keys) {
-    getKeySet();
-  }
-
-  return [keys, setKeys];
+    if (existingKeys) {
+      setNewKeys(existingKeys);
+    }
+  }, [existingKeys, newKeys, sea]);
+  return newKeys;
 };
 var useGunState = function useGunState(ref, opts) {
   if (opts === void 0) {
@@ -261,7 +272,7 @@ var useGunState = function useGunState(ref, opts) {
       return Promise.resolve(encryptData(data, appKeys, sea)).then(function (encryptedData) {
         return Promise.resolve(new Promise(function (resolve, reject) {
           return gunAppGraph.put(encryptedData, function (ack) {
-            return ack.err ? reject(ack.err) : resolve();
+            return ack.err ? reject(ack.err) : resolve(data);
           });
         })).then(function () {});
       });
@@ -274,7 +285,7 @@ var useGunState = function useGunState(ref, opts) {
     try {
       return Promise.resolve(new Promise(function (resolve, reject) {
         return gunAppGraph.put(null, function (ack) {
-          return ack.err ? reject(ack.err) : resolve();
+          return ack.err ? reject(ack.err) : resolve(field);
         });
       })).then(function () {
         dispatch({
@@ -385,7 +396,7 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
       return Promise.resolve(encryptData(data, appKeys, sea)).then(function (encryptedData) {
         return Promise.resolve(new Promise(function (resolve, reject) {
           return gunAppGraph.get(nodeID).put(encryptedData, function (ack) {
-            return ack.err ? reject(ack.err) : resolve();
+            return ack.err ? reject(ack.err) : resolve(data);
           });
         })).then(function () {
           dispatch({
@@ -408,13 +419,13 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
           if (!nodeID) {
             return Promise.resolve(new Promise(function (resolve, reject) {
               return gunAppGraph.set(encryptedData, function (ack) {
-                return ack.err ? reject(ack.err) : resolve();
+                return ack.err ? reject(ack.err) : resolve(data);
               });
             })).then(function () {});
           } else {
             return Promise.resolve(new Promise(function (resolve, reject) {
               return gunAppGraph.get(nodeID).put(encryptedData, function (ack) {
-                return ack.err ? reject(ack.err) : resolve();
+                return ack.err ? reject(ack.err) : resolve(data);
               });
             })).then(function () {});
           }
@@ -431,7 +442,7 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
     try {
       return Promise.resolve(new Promise(function (resolve, reject) {
         return gunAppGraph.get(nodeID).put(null, function (ack) {
-          return ack.err ? reject(ack.err) : resolve();
+          return ack.err ? reject(ack.err) : resolve(nodeID);
         });
       })).then(function () {});
     } catch (e) {

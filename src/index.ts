@@ -124,17 +124,25 @@ export const useSafeReducer = <T>(reducer, initialState): [T, Function] => {
 };
 
 export const useGun = (Gun: GunStatic, opts: GunOptions) => {
-  const [gun] = useState(Gun(opts));
+  const [gun, setGun] = useState(Gun(opts));
 
-  return [gun];
+  useEffect(() => {
+    if (opts) {
+      setGun({ ...opts });
+    }
+  }, [Gun, opts]);
+
+  return gun;
 };
 
-export const useGunNamespace = (gun: GunRef) => {
+export const useGunNamespace = (gun: GunRef, soul?: string) => {
   const [namespace, setNamespace] = useState(null);
-  if (!namespace) {
-    setNamespace(gun.user());
-  }
-  return [namespace];
+  useEffect(() => {
+    if (gun && !namespace) {
+      setNamespace(soul ? gun.user(soul) : gun.user());
+    }
+  }, [namespace, gun, soul]);
+  return namespace;
 };
 
 export const useGunKeyAuth = (
@@ -144,7 +152,7 @@ export const useGunKeyAuth = (
 ) => {
   // Will attempt to perform a login (when triggerAuth is set to true),
   // or, if false, returns a namespaced gun node
-  const [namespacedGraph] = useGunNamespace(gun);
+  const namespacedGraph = useGunNamespace(gun);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   gun.on('auth', () => {
@@ -160,19 +168,30 @@ export const useGunKeyAuth = (
   return [namespacedGraph, isLoggedIn];
 };
 
-export const useGunKeys = (sea: any, initialValue: any) => {
-  const [keys, setKeys] = useState(initialValue);
+export const useGunKeys = (
+  sea: any,
+  existingKeys?: KeyPair | undefined | null
+) => {
+  const [newKeys, setNewKeys] = useState<KeyPair | undefined | null>(
+    existingKeys
+  );
 
-  async function getKeySet() {
-    const pair: KeyPair = await sea.pair();
-    setKeys(pair);
-  }
+  useEffect(() => {
+    async function getKeySet() {
+      const pair: KeyPair = await sea.pair();
+      setNewKeys(pair);
+    }
 
-  if (!keys) {
-    getKeySet();
-  }
+    if (!newKeys && !existingKeys) {
+      getKeySet();
+    }
 
-  return [keys, setKeys];
+    if (existingKeys) {
+      setNewKeys(existingKeys);
+    }
+  }, [existingKeys, newKeys, sea]);
+
+  return newKeys;
 };
 
 export const useGunState = <T>(
@@ -239,14 +258,16 @@ export const useGunState = <T>(
     let encryptedData = await encryptData(data, appKeys, sea);
     await new Promise((resolve, reject) =>
       gunAppGraph.put(encryptedData, (ack) =>
-        ack.err ? reject(ack.err) : resolve()
+        ack.err ? reject(ack.err) : resolve(data)
       )
     );
   };
 
   const remove = async (field: string) => {
     await new Promise((resolve, reject) =>
-      gunAppGraph.put(null, (ack) => (ack.err ? reject(ack.err) : resolve()))
+      gunAppGraph.put(null, (ack) =>
+        ack.err ? reject(ack.err) : resolve(field)
+      )
     );
     dispatch({ type: 'remove', data: field });
   };
@@ -322,7 +343,9 @@ export const useGunCollectionState = <T>(
     await new Promise((resolve, reject) =>
       gunAppGraph
         .get(nodeID)
-        .put(encryptedData, (ack) => (ack.err ? reject(ack.err) : resolve()))
+        .put(encryptedData, (ack) =>
+          ack.err ? reject(ack.err) : resolve(data)
+        )
     );
     dispatch({ type: 'update', data: { nodeID, ...data } });
   };
@@ -332,14 +355,16 @@ export const useGunCollectionState = <T>(
     if (!nodeID) {
       await new Promise((resolve, reject) =>
         gunAppGraph.set(encryptedData, (ack) =>
-          ack.err ? reject(ack.err) : resolve()
+          ack.err ? reject(ack.err) : resolve(data)
         )
       );
     } else {
       await new Promise((resolve, reject) =>
         gunAppGraph
           .get(nodeID)
-          .put(encryptedData, (ack) => (ack.err ? reject(ack.err) : resolve()))
+          .put(encryptedData, (ack) =>
+            ack.err ? reject(ack.err) : resolve(data)
+          )
       );
     }
   };
@@ -348,7 +373,7 @@ export const useGunCollectionState = <T>(
     await new Promise((resolve, reject) =>
       gunAppGraph
         .get(nodeID)
-        .put(null, (ack) => (ack.err ? reject(ack.err) : resolve()))
+        .put(null, (ack) => (ack.err ? reject(ack.err) : resolve(nodeID)))
     );
   };
 

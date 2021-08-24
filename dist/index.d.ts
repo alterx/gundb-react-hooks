@@ -42,10 +42,10 @@ export declare const debouncedUpdates: (dispatcher: any, timeout?: number) => (u
 export declare const reducer: (state: {}, { data, type }: ActionType) => any;
 export declare const useIsMounted: () => any;
 export declare const useSafeReducer: <T>(reducer: any, initialState: any) => [T, Function];
-export declare const useGun: (Gun: GunStatic, opts: GunOptions) => any[];
-export declare const useGunNamespace: (gun: GunRef) => any[];
+export declare const useGun: (Gun: GunStatic, opts: GunOptions) => any;
+export declare const useGunNamespace: (gun: GunRef, soul?: string | undefined) => any;
 export declare const useGunKeyAuth: (gun: GunRef, keys: KeyPair, triggerAuth?: boolean) => any[];
-export declare const useGunKeys: (sea: any, initialValue: any) => any[];
+export declare const useGunKeys: (sea: any, existingKeys?: KeyPair | undefined | null) => any;
 export declare const useGunState: <T>(ref: GunRef, opts?: Options) => {
     fields: T;
     put: (data: T) => Promise<void>;
