@@ -136,7 +136,9 @@ export const useGun = (Gun: GunStatic, opts: GunOptions) => {
 };
 
 export const useGunNamespace = (gun: GunRef, soul?: string) => {
-  const [namespace, setNamespace] = useState(null);
+  const [namespace, setNamespace] = useState(
+    soul ? gun.user(soul) : gun.user()
+  );
   useEffect(() => {
     if (gun && !namespace) {
       setNamespace(soul ? gun.user(soul) : gun.user());

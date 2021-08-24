@@ -125,7 +125,7 @@
     return gun;
   };
   var useGunNamespace = function useGunNamespace(gun, soul) {
-    var _useState2 = react.useState(null),
+    var _useState2 = react.useState(soul ? gun.user(soul) : gun.user()),
         namespace = _useState2[0],
         setNamespace = _useState2[1];
 

@@ -103,7 +103,7 @@ const useGun = (Gun, opts) => {
   return gun;
 };
 const useGunNamespace = (gun, soul) => {
-  const [namespace, setNamespace] = useState(null);
+  const [namespace, setNamespace] = useState(soul ? gun.user(soul) : gun.user());
   useEffect(() => {
     if (gun && !namespace) {
       setNamespace(soul ? gun.user(soul) : gun.user());
