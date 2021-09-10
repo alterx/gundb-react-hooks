@@ -8,7 +8,7 @@ The third parameter is `true` by default, so the hook will attempt to login imme
 
 ```jsx harmony
 import React from 'react';
-import { useGun } from 'gundb-react-hooks';
+import { useGun } from '@altrx/gundb-react-hooks';
 import SEA from 'gun/sea';
 
 export const App = () => {

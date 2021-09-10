@@ -32,7 +32,11 @@ var decryptData = function decryptData(data, keys, sea) {
     return Promise.reject(e);
   }
 };
-var debouncedUpdates = function debouncedUpdates(dispatcher, timeout) {
+var debouncedUpdates = function debouncedUpdates(dispatcher, type, timeout) {
+  if (type === void 0) {
+    type = 'object';
+  }
+
   if (timeout === void 0) {
     timeout = 100;
   }
@@ -47,9 +51,15 @@ var debouncedUpdates = function debouncedUpdates(dispatcher, timeout) {
         var newStateSlice = updates.reduce(function (previousState, _ref) {
           var id = _ref.id,
               data = _ref.data;
-          previousState[id] = data;
+
+          if (type === 'object') {
+            previousState[id] = data;
+          } else {
+            previousState.set(id, data);
+          }
+
           return previousState;
-        }, {});
+        }, type === 'object' ? {} : new Map());
         dispatcher(newStateSlice);
         updates = [];
         handler = null;
@@ -63,9 +73,17 @@ var debouncedUpdates = function debouncedUpdates(dispatcher, timeout) {
     };
   };
 };
-var reducer = function reducer(state, _ref2) {
-  var _extends2;
-
+var useIsMounted = function useIsMounted() {
+  var isMounted = hooks.useRef(false);
+  hooks.useEffect(function () {
+    isMounted.current = true;
+    return function () {
+      isMounted.current = false;
+    };
+  }, []);
+  return isMounted;
+};
+var nodeReducer = function nodeReducer(state, _ref2) {
   var data = _ref2.data,
       type = _ref2.type;
 
@@ -73,26 +91,46 @@ var reducer = function reducer(state, _ref2) {
     case 'add':
       return _extends({}, state, data);
 
-    case 'update':
-      return _extends({}, state, (_extends2 = {}, _extends2[data.nodeID] = data, _extends2));
-
     case 'remove':
-      delete state[data];
+      delete state[data.nodeID];
       return _extends({}, state);
 
     default:
       throw new Error();
   }
 };
-var useIsMounted = function useIsMounted() {
-  var isMounted = hooks.useRef(false);
-  hooks.useEffect(function () {
-    isMounted.current = true;
-    return function () {
-      return isMounted.current = false;
-    };
-  }, []);
-  return isMounted;
+var collectionReducer = function collectionReducer(state, _ref3) {
+  var _state$collection2, _state$collection3;
+
+  var data = _ref3.data,
+      type = _ref3.type;
+
+  switch (type) {
+    case 'add':
+      data.forEach(function (data) {
+        var _state$collection;
+
+        (_state$collection = state.collection) == null ? void 0 : _state$collection.set(data.nodeID, data);
+      });
+      return _extends({}, state, {
+        collection: state.collection
+      });
+
+    case 'update':
+      (_state$collection2 = state.collection) == null ? void 0 : _state$collection2.set(data.nodeID, data);
+      return _extends({}, state, {
+        collection: state.collection
+      });
+
+    case 'remove':
+      (_state$collection3 = state.collection) == null ? void 0 : _state$collection3["delete"](data.nodeID);
+      return _extends({}, state, {
+        collection: state.collection
+      });
+
+    default:
+      throw new Error();
+  }
 };
 var useSafeReducer = function useSafeReducer(reducer, initialState) {
   var _useReducer = hooks.useReducer(reducer, initialState),
@@ -182,12 +220,11 @@ var useGunKeys = function useGunKeys(sea, existingKeys) {
   }, [existingKeys, newKeys, sea]);
   return newKeys;
 };
-var useGunState = function useGunState(ref, opts) {
+var useGunOnNodeUpdated = function useGunOnNodeUpdated(ref, opts, cb, cleanup) {
   if (opts === void 0) {
     opts = {
       appKeys: '',
       sea: null,
-      interval: 100,
       useOpen: false
     };
   }
@@ -195,41 +232,19 @@ var useGunState = function useGunState(ref, opts) {
   var _opts = opts,
       appKeys = _opts.appKeys,
       sea = _opts.sea,
-      _opts$interval = _opts.interval,
-      interval = _opts$interval === void 0 ? 100 : _opts$interval,
-      _opts$useOpen = _opts.useOpen,
-      useOpen = _opts$useOpen === void 0 ? false : _opts$useOpen;
+      useOpen = _opts.useOpen;
 
   var _useState5 = hooks.useState(ref),
       gunAppGraph = _useState5[0];
 
-  var _useSafeReducer = useSafeReducer(reducer, {}),
-      fields = _useSafeReducer[0],
-      dispatch = _useSafeReducer[1];
-
   var handler = hooks.useRef(null);
   var isMounted = useIsMounted();
   hooks.useEffect(function () {
-    var debouncedHandlers = [];
-
     if (isMounted.current) {
-      var updater = debouncedUpdates(function (data) {
-        dispatch({
-          type: 'add',
-          data: data
-        });
-      }, interval);
-
       var gunCb = function gunCb(encryptedField, nodeID, message, event) {
         try {
           return Promise.resolve(decryptData(encryptedField, appKeys, sea)).then(function (decryptedField) {
-            Object.keys(decryptedField).forEach(function (key) {
-              var cleanFn = updater({
-                id: key,
-                data: decryptedField[key]
-              });
-              debouncedHandlers.push(cleanFn);
-            });
+            cb(decryptedField, nodeID);
 
             if (!handler.current) {
               handler.current = event;
@@ -257,15 +272,59 @@ var useGunState = function useGunState(ref, opts) {
         handler.current.off();
       }
 
-      if (debouncedHandlers.length) {
-        //cleanup timeouts
-        debouncedHandlers.forEach(function (c) {
-          return c();
-        });
+      if (cleanup) {
+        cleanup();
       }
     }; // We just need to set the listener once
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Working with root node fields
+  }, []);
+};
+var useGunState = function useGunState(ref, opts) {
+  if (opts === void 0) {
+    opts = {
+      appKeys: '',
+      sea: null,
+      interval: 100,
+      useOpen: false
+    };
+  }
+
+  var _opts2 = opts,
+      appKeys = _opts2.appKeys,
+      sea = _opts2.sea,
+      _opts2$interval = _opts2.interval,
+      interval = _opts2$interval === void 0 ? 100 : _opts2$interval;
+
+  var _useState6 = hooks.useState(ref),
+      gunAppGraph = _useState6[0];
+
+  var _useSafeReducer = useSafeReducer(nodeReducer, {}),
+      fields = _useSafeReducer[0],
+      dispatch = _useSafeReducer[1];
+
+  var debouncedHandlers = [];
+  var updater = debouncedUpdates(function (data) {
+    dispatch({
+      type: 'add',
+      data: data
+    });
+  }, 'object', interval);
+  useGunOnNodeUpdated(gunAppGraph, opts, function (item) {
+    Object.keys(item).forEach(function (key) {
+      var cleanFn = updater({
+        id: key,
+        data: item[key]
+      });
+      debouncedHandlers.push(cleanFn);
+    });
+  }, function () {
+    if (debouncedHandlers.length) {
+      //cleanup timeouts
+      debouncedHandlers.forEach(function (c) {
+        return c();
+      });
+    }
+  }); // Working with root node fields
 
   var put = function put(data) {
     try {
@@ -290,7 +349,9 @@ var useGunState = function useGunState(ref, opts) {
       })).then(function () {
         dispatch({
           type: 'remove',
-          data: field
+          data: {
+            nodeID: field
+          }
         });
       });
     } catch (e) {
@@ -314,82 +375,46 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
     };
   }
 
-  var _opts2 = opts,
-      appKeys = _opts2.appKeys,
-      sea = _opts2.sea,
-      _opts2$interval = _opts2.interval,
-      interval = _opts2$interval === void 0 ? 100 : _opts2$interval,
-      useOpen = _opts2.useOpen;
+  var _opts3 = opts,
+      appKeys = _opts3.appKeys,
+      sea = _opts3.sea,
+      _opts3$interval = _opts3.interval,
+      interval = _opts3$interval === void 0 ? 100 : _opts3$interval;
 
-  var _useState6 = hooks.useState(ref),
-      gunAppGraph = _useState6[0];
+  var _useState7 = hooks.useState(ref),
+      gunAppGraph = _useState7[0];
 
-  var _useSafeReducer2 = useSafeReducer(reducer, {}),
-      collection = _useSafeReducer2[0],
+  var _useSafeReducer2 = useSafeReducer(collectionReducer, {
+    collection: new Map()
+  }),
+      collection = _useSafeReducer2[0].collection,
       dispatch = _useSafeReducer2[1];
 
-  var handler = hooks.useRef(null);
-  var isMounted = useIsMounted(); // Working with Sets
-
-  hooks.useEffect(function () {
-    var debouncedHandlers = [];
-
-    if (isMounted.current) {
-      var updater = debouncedUpdates(function (data) {
-        dispatch({
-          type: 'add',
-          data: data
-        });
-      }, interval);
-
-      var gunCb = function gunCb(encryptedNode, nodeID, message, event) {
-        try {
-          return Promise.resolve(decryptData(encryptedNode, appKeys, sea)).then(function (item) {
-            if (item) {
-              var cleanFn = updater({
-                id: nodeID,
-                data: _extends({}, item, {
-                  nodeID: nodeID
-                })
-              });
-              debouncedHandlers.push(cleanFn);
-            }
-
-            if (!handler.current) {
-              handler.current = event;
-            }
-          });
-        } catch (e) {
-          return Promise.reject(e);
-        }
-      };
-
-      if (useOpen) {
-        if (!gunAppGraph.open) {
-          throw new Error('Please include gun/lib/open.');
-        } else {
-          gunAppGraph.map().open(gunCb);
-        }
-      } else {
-        gunAppGraph.map().on(gunCb);
-      }
+  var debouncedHandlers = [];
+  var updater = debouncedUpdates(function (data) {
+    dispatch({
+      type: 'add',
+      data: data
+    });
+  }, 'map', interval);
+  useGunOnNodeUpdated(gunAppGraph.map(), opts, function (item, nodeID) {
+    if (item) {
+      var cleanFn = updater({
+        id: nodeID,
+        data: _extends({}, item, {
+          nodeID: nodeID
+        })
+      });
+      debouncedHandlers.push(cleanFn);
     }
-
-    return function () {
-      if (handler.current) {
-        //cleanup gun .on listener
-        handler.current.off();
-      }
-
-      if (debouncedHandlers.length) {
-        //cleanup timeouts
-        debouncedHandlers.forEach(function (c) {
-          return c();
-        });
-      }
-    }; // We just need to set the listener once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, function () {
+    if (debouncedHandlers.length) {
+      //cleanup timeouts
+      debouncedHandlers.forEach(function (c) {
+        return c();
+      });
+    }
+  }); // Working with Sets
 
   var updateInSet = function updateInSet(nodeID, data) {
     try {
@@ -458,15 +483,17 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
   };
 };
 
+exports.collectionReducer = collectionReducer;
 exports.debouncedUpdates = debouncedUpdates;
 exports.decryptData = decryptData;
 exports.encryptData = encryptData;
-exports.reducer = reducer;
+exports.nodeReducer = nodeReducer;
 exports.useGun = useGun;
 exports.useGunCollectionState = useGunCollectionState;
 exports.useGunKeyAuth = useGunKeyAuth;
 exports.useGunKeys = useGunKeys;
 exports.useGunNamespace = useGunNamespace;
+exports.useGunOnNodeUpdated = useGunOnNodeUpdated;
 exports.useGunState = useGunState;
 exports.useIsMounted = useIsMounted;
 exports.useSafeReducer = useSafeReducer;

@@ -1,6 +1,6 @@
 {
   "name": "@altrx/gundb-react-hooks",
-  "version": "0.9.3",
+  "version": "0.9.6",
   "description": "GUNDB hooks for React/Preact",
   "browser": "./dist/gundb-react-hooks.umd.js",
   "umd:main": "./dist/gundb-react-hooks.umd.js",

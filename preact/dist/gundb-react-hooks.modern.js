@@ -24,7 +24,7 @@ const encryptData = async (data, keys, sea) => {
 const decryptData = async (data, keys, sea) => {
   return keys && sea ? sea.decrypt(data, keys) : Promise.resolve(data);
 };
-const debouncedUpdates = (dispatcher, timeout = 100) => {
+const debouncedUpdates = (dispatcher, type = 'object', timeout = 100) => {
   let updates = [];
   let handler;
   return update => {
@@ -36,9 +36,14 @@ const debouncedUpdates = (dispatcher, timeout = 100) => {
           id,
           data
         }) => {
-          previousState[id] = data;
+          if (type === 'object') {
+            previousState[id] = data;
+          } else {
+            previousState.set(id, data);
+          }
+
           return previousState;
-        }, {});
+        }, type === 'object' ? {} : new Map());
         dispatcher(newStateSlice);
         updates = [];
         handler = null;
@@ -52,7 +57,17 @@ const debouncedUpdates = (dispatcher, timeout = 100) => {
     };
   };
 };
-const reducer = (state, {
+const useIsMounted = () => {
+  const isMounted = useRef(false);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+  return isMounted;
+};
+const nodeReducer = (state, {
   data,
   type
 }) => {
@@ -60,26 +75,46 @@ const reducer = (state, {
     case 'add':
       return _extends({}, state, data);
 
-    case 'update':
-      return _extends({}, state, {
-        [data.nodeID]: data
-      });
-
     case 'remove':
-      delete state[data];
+      delete state[data.nodeID];
       return _extends({}, state);
 
     default:
       throw new Error();
   }
 };
-const useIsMounted = () => {
-  const isMounted = useRef(false);
-  useEffect(() => {
-    isMounted.current = true;
-    return () => isMounted.current = false;
-  }, []);
-  return isMounted;
+const collectionReducer = (state, {
+  data,
+  type
+}) => {
+  var _state$collection2, _state$collection3;
+
+  switch (type) {
+    case 'add':
+      data.forEach(data => {
+        var _state$collection;
+
+        (_state$collection = state.collection) == null ? void 0 : _state$collection.set(data.nodeID, data);
+      });
+      return _extends({}, state, {
+        collection: state.collection
+      });
+
+    case 'update':
+      (_state$collection2 = state.collection) == null ? void 0 : _state$collection2.set(data.nodeID, data);
+      return _extends({}, state, {
+        collection: state.collection
+      });
+
+    case 'remove':
+      (_state$collection3 = state.collection) == null ? void 0 : _state$collection3.delete(data.nodeID);
+      return _extends({}, state, {
+        collection: state.collection
+      });
+
+    default:
+      throw new Error();
+  }
 };
 const useSafeReducer = (reducer, initialState) => {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -144,42 +179,24 @@ const useGunKeys = (sea, existingKeys) => {
   }, [existingKeys, newKeys, sea]);
   return newKeys;
 };
-const useGunState = (ref, opts = {
+const useGunOnNodeUpdated = (ref, opts = {
   appKeys: '',
   sea: null,
-  interval: 100,
   useOpen: false
-}) => {
+}, cb, cleanup) => {
   const {
     appKeys,
     sea,
-    interval = 100,
-    useOpen = false
+    useOpen
   } = opts;
   const [gunAppGraph] = useState(ref);
-  const [fields, dispatch] = useSafeReducer(reducer, {});
   const handler = useRef(null);
   const isMounted = useIsMounted();
   useEffect(() => {
-    const debouncedHandlers = [];
-
     if (isMounted.current) {
-      const updater = debouncedUpdates(data => {
-        dispatch({
-          type: 'add',
-          data
-        });
-      }, interval);
-
       const gunCb = async (encryptedField, nodeID, message, event) => {
         let decryptedField = await decryptData(encryptedField, appKeys, sea);
-        Object.keys(decryptedField).forEach(key => {
-          let cleanFn = updater({
-            id: key,
-            data: decryptedField[key]
-          });
-          debouncedHandlers.push(cleanFn);
-        });
+        cb(decryptedField, nodeID);
 
         if (!handler.current) {
           handler.current = event;
@@ -203,13 +220,47 @@ const useGunState = (ref, opts = {
         handler.current.off();
       }
 
-      if (debouncedHandlers.length) {
-        //cleanup timeouts
-        debouncedHandlers.forEach(c => c());
+      if (cleanup) {
+        cleanup();
       }
     }; // We just need to set the listener once
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Working with root node fields
+  }, []);
+};
+const useGunState = (ref, opts = {
+  appKeys: '',
+  sea: null,
+  interval: 100,
+  useOpen: false
+}) => {
+  const {
+    appKeys,
+    sea,
+    interval = 100
+  } = opts;
+  const [gunAppGraph] = useState(ref);
+  const [fields, dispatch] = useSafeReducer(nodeReducer, {});
+  const debouncedHandlers = [];
+  const updater = debouncedUpdates(data => {
+    dispatch({
+      type: 'add',
+      data
+    });
+  }, 'object', interval);
+  useGunOnNodeUpdated(gunAppGraph, opts, item => {
+    Object.keys(item).forEach(key => {
+      let cleanFn = updater({
+        id: key,
+        data: item[key]
+      });
+      debouncedHandlers.push(cleanFn);
+    });
+  }, () => {
+    if (debouncedHandlers.length) {
+      //cleanup timeouts
+      debouncedHandlers.forEach(c => c());
+    }
+  }); // Working with root node fields
 
   const put = async data => {
     let encryptedData = await encryptData(data, appKeys, sea);
@@ -220,7 +271,9 @@ const useGunState = (ref, opts = {
     await new Promise((resolve, reject) => gunAppGraph.put(null, ack => ack.err ? reject(ack.err) : resolve(field)));
     dispatch({
       type: 'remove',
-      data: field
+      data: {
+        nodeID: field
+      }
     });
   };
 
@@ -239,67 +292,37 @@ const useGunCollectionState = (ref, opts = {
   const {
     appKeys,
     sea,
-    interval = 100,
-    useOpen
+    interval = 100
   } = opts;
   const [gunAppGraph] = useState(ref);
-  const [collection, dispatch] = useSafeReducer(reducer, {});
-  const handler = useRef(null);
-  const isMounted = useIsMounted(); // Working with Sets
-
-  useEffect(() => {
-    const debouncedHandlers = [];
-
-    if (isMounted.current) {
-      const updater = debouncedUpdates(data => {
-        dispatch({
-          type: 'add',
-          data
-        });
-      }, interval);
-
-      const gunCb = async (encryptedNode, nodeID, message, event) => {
-        let item = await decryptData(encryptedNode, appKeys, sea);
-
-        if (item) {
-          let cleanFn = updater({
-            id: nodeID,
-            data: _extends({}, item, {
-              nodeID
-            })
-          });
-          debouncedHandlers.push(cleanFn);
-        }
-
-        if (!handler.current) {
-          handler.current = event;
-        }
-      };
-
-      if (useOpen) {
-        if (!gunAppGraph.open) {
-          throw new Error('Please include gun/lib/open.');
-        } else {
-          gunAppGraph.map().open(gunCb);
-        }
-      } else {
-        gunAppGraph.map().on(gunCb);
-      }
+  const [{
+    collection
+  }, dispatch] = useSafeReducer(collectionReducer, {
+    collection: new Map()
+  });
+  const debouncedHandlers = [];
+  const updater = debouncedUpdates(data => {
+    dispatch({
+      type: 'add',
+      data
+    });
+  }, 'map', interval);
+  useGunOnNodeUpdated(gunAppGraph.map(), opts, (item, nodeID) => {
+    if (item) {
+      let cleanFn = updater({
+        id: nodeID,
+        data: _extends({}, item, {
+          nodeID
+        })
+      });
+      debouncedHandlers.push(cleanFn);
     }
-
-    return () => {
-      if (handler.current) {
-        //cleanup gun .on listener
-        handler.current.off();
-      }
-
-      if (debouncedHandlers.length) {
-        //cleanup timeouts
-        debouncedHandlers.forEach(c => c());
-      }
-    }; // We just need to set the listener once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, () => {
+    if (debouncedHandlers.length) {
+      //cleanup timeouts
+      debouncedHandlers.forEach(c => c());
+    }
+  }); // Working with Sets
 
   const updateInSet = async (nodeID, data) => {
     let encryptedData = await encryptData(data, appKeys, sea);
@@ -334,5 +357,5 @@ const useGunCollectionState = (ref, opts = {
   };
 };
 
-export { debouncedUpdates, decryptData, encryptData, reducer, useGun, useGunCollectionState, useGunKeyAuth, useGunKeys, useGunNamespace, useGunState, useIsMounted, useSafeReducer };
+export { collectionReducer, debouncedUpdates, decryptData, encryptData, nodeReducer, useGun, useGunCollectionState, useGunKeyAuth, useGunKeys, useGunNamespace, useGunOnNodeUpdated, useGunState, useIsMounted, useSafeReducer };
 //# sourceMappingURL=gundb-react-hooks.modern.js.map
