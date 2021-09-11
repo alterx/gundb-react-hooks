@@ -347,6 +347,12 @@ const useGunCollectionState = (ref, opts = {
 
   const removeFromSet = async nodeID => {
     await new Promise((resolve, reject) => gunAppGraph.get(nodeID).put(null, ack => ack.err ? reject(ack.err) : resolve(nodeID)));
+    dispatch({
+      type: 'remove',
+      data: {
+        nodeID
+      }
+    });
   };
 
   return {

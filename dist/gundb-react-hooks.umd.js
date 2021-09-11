@@ -472,7 +472,14 @@
           return gunAppGraph.get(nodeID).put(null, function (ack) {
             return ack.err ? reject(ack.err) : resolve(nodeID);
           });
-        })).then(function () {});
+        })).then(function () {
+          dispatch({
+            type: 'remove',
+            data: {
+              nodeID: nodeID
+            }
+          });
+        });
       } catch (e) {
         return Promise.reject(e);
       }
