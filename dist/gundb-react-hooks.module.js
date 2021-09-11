@@ -406,6 +406,13 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
         })
       });
       debouncedHandlers.push(cleanFn);
+    } else {
+      dispatch({
+        type: 'remove',
+        data: {
+          nodeID: nodeID
+        }
+      });
     }
   }, function () {
     if (debouncedHandlers.length) {
@@ -469,14 +476,7 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
         return gunAppGraph.get(nodeID).put(null, function (ack) {
           return ack.err ? reject(ack.err) : resolve(nodeID);
         });
-      })).then(function () {
-        dispatch({
-          type: 'remove',
-          data: {
-            nodeID: nodeID
-          }
-        });
-      });
+      })).then(function () {});
     } catch (e) {
       return Promise.reject(e);
     }

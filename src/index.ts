@@ -413,6 +413,8 @@ export const useGunCollectionState = <T>(
           data: { ...item, nodeID },
         });
         debouncedHandlers.push(cleanFn);
+      } else {
+        dispatch({ type: 'remove', data: { nodeID } });
       }
     },
     () => {
@@ -462,7 +464,6 @@ export const useGunCollectionState = <T>(
         .get(nodeID)
         .put(null, (ack: any) => (ack.err ? reject(ack.err) : resolve(nodeID)))
     );
-     dispatch({ type: 'remove', data: { nodeID } });
   };
 
   return { collection, addToSet, updateInSet, removeFromSet };
