@@ -14,7 +14,7 @@ export const App = () => {
   const appKeys = useGunKeys(SEA);
   const [user, isLoggedIn] = useGunKeyAuth(gun, appKeys);
 
-  useOnNodeUpdated(
+  useGunOnNodeUpdated(
     user,
     { appKeys },
     (udpate) => {
