@@ -413,6 +413,8 @@ export const useGunCollectionState = <T>(
           data: { ...item, nodeID },
         });
         debouncedHandlers.push(cleanFn);
+      } else {
+        dispatch({ type: 'remove', data: { nodeID } });
       }
     },
     () => {

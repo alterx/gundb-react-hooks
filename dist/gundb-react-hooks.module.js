@@ -406,6 +406,13 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
         })
       });
       debouncedHandlers.push(cleanFn);
+    } else {
+      dispatch({
+        type: 'remove',
+        data: {
+          nodeID: nodeID
+        }
+      });
     }
   }, function () {
     if (debouncedHandlers.length) {
