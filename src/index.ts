@@ -270,7 +270,6 @@ export const useGunOnNodeUpdated = <T>(
   cleanup?: () => void
 ) => {
   const { appKeys, sea, useOpen } = opts;
-  const [gunAppGraph] = useState(ref);
   const handler = useRef(null);
   const isMounted = useIsMounted();
 
@@ -291,13 +290,13 @@ export const useGunOnNodeUpdated = <T>(
       };
 
       if (useOpen) {
-        if (!gunAppGraph.open) {
+        if (!ref.open) {
           throw new Error('Please include gun/lib/open.');
         } else {
-          gunAppGraph.open(gunCb);
+          ref.open(gunCb);
         }
       } else {
-        gunAppGraph.on(gunCb);
+        ref.on(gunCb);
       }
     }
 
@@ -310,9 +309,7 @@ export const useGunOnNodeUpdated = <T>(
         cleanup();
       }
     };
-    // We just need to set the listener once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ref]);
 };
 
 export const useGunState = <T>(
@@ -325,7 +322,6 @@ export const useGunState = <T>(
   }
 ) => {
   const { appKeys, sea, interval = 100 } = opts;
-  const [gunAppGraph] = useState(ref);
   const [fields, dispatch] = useSafeReducer<T>(nodeReducer, {} as T);
 
   const debouncedHandlers: Function[] = [];
@@ -338,7 +334,7 @@ export const useGunState = <T>(
   );
 
   useGunOnNodeUpdated(
-    gunAppGraph,
+    ref,
     opts,
     (item: any) => {
       Object.keys(item).forEach((key) => {
@@ -358,7 +354,7 @@ export const useGunState = <T>(
   const put = async (data: T) => {
     let encryptedData = await encryptData(data, appKeys, sea);
     await new Promise((resolve, reject) =>
-      gunAppGraph.put(encryptedData, (ack: any) =>
+      ref.put(encryptedData, (ack: any) =>
         ack.err ? reject(ack.err) : resolve(data)
       )
     );
@@ -366,9 +362,7 @@ export const useGunState = <T>(
 
   const remove = async (field: string) => {
     await new Promise((resolve, reject) =>
-      gunAppGraph.put(null, (ack: any) =>
-        ack.err ? reject(ack.err) : resolve(field)
-      )
+      ref.put(null, (ack: any) => (ack.err ? reject(ack.err) : resolve(field)))
     );
     dispatch({ type: 'remove', data: { nodeID: field } });
   };
@@ -386,7 +380,6 @@ export const useGunCollectionState = <T>(
   }
 ) => {
   const { appKeys, sea, interval = 100 } = opts;
-  const [gunAppGraph] = useState(ref);
   const [{ collection }, dispatch] = useSafeReducer<CollectionState<T>>(
     collectionReducer,
     {
@@ -404,7 +397,7 @@ export const useGunCollectionState = <T>(
   );
 
   useGunOnNodeUpdated(
-    gunAppGraph.map(),
+    ref.map(),
     opts,
     (item: T, nodeID) => {
       if (item) {
@@ -428,7 +421,7 @@ export const useGunCollectionState = <T>(
   const updateInSet = async (nodeID: string, data: T) => {
     let encryptedData = await encryptData(data, appKeys, sea);
     await new Promise((resolve, reject) =>
-      gunAppGraph
+      ref
         .get(nodeID)
         .put(encryptedData, (ack: any) =>
           ack.err ? reject(ack.err) : resolve(data)
@@ -441,13 +434,13 @@ export const useGunCollectionState = <T>(
     let encryptedData = await encryptData(data, appKeys, sea);
     if (!nodeID) {
       await new Promise((resolve, reject) =>
-        gunAppGraph.set(encryptedData, (ack: any) =>
+        ref.set(encryptedData, (ack: any) =>
           ack.err ? reject(ack.err) : resolve(data)
         )
       );
     } else {
       await new Promise((resolve, reject) =>
-        gunAppGraph
+        ref
           .get(nodeID)
           .put(encryptedData, (ack: any) =>
             ack.err ? reject(ack.err) : resolve(data)
@@ -458,7 +451,7 @@ export const useGunCollectionState = <T>(
 
   const removeFromSet = async (nodeID: string) => {
     await new Promise((resolve, reject) =>
-      gunAppGraph
+      ref
         .get(nodeID)
         .put(null, (ack: any) => (ack.err ? reject(ack.err) : resolve(nodeID)))
     );

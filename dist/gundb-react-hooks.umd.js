@@ -236,10 +236,6 @@
         appKeys = _opts.appKeys,
         sea = _opts.sea,
         useOpen = _opts.useOpen;
-
-    var _useState5 = react.useState(ref),
-        gunAppGraph = _useState5[0];
-
     var handler = react.useRef(null);
     var isMounted = useIsMounted();
     react.useEffect(function () {
@@ -259,13 +255,13 @@
         };
 
         if (useOpen) {
-          if (!gunAppGraph.open) {
+          if (!ref.open) {
             throw new Error('Please include gun/lib/open.');
           } else {
-            gunAppGraph.open(gunCb);
+            ref.open(gunCb);
           }
         } else {
-          gunAppGraph.on(gunCb);
+          ref.on(gunCb);
         }
       }
 
@@ -278,9 +274,8 @@
         if (cleanup) {
           cleanup();
         }
-      }; // We just need to set the listener once
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+      };
+    }, [ref]);
   };
   var useGunState = function useGunState(ref, opts) {
     if (opts === void 0) {
@@ -298,9 +293,6 @@
         _opts2$interval = _opts2.interval,
         interval = _opts2$interval === void 0 ? 100 : _opts2$interval;
 
-    var _useState6 = react.useState(ref),
-        gunAppGraph = _useState6[0];
-
     var _useSafeReducer = useSafeReducer(nodeReducer, {}),
         fields = _useSafeReducer[0],
         dispatch = _useSafeReducer[1];
@@ -312,7 +304,7 @@
         data: data
       });
     }, 'object', interval);
-    useGunOnNodeUpdated(gunAppGraph, opts, function (item) {
+    useGunOnNodeUpdated(ref, opts, function (item) {
       Object.keys(item).forEach(function (key) {
         var cleanFn = updater({
           id: key,
@@ -333,7 +325,7 @@
       try {
         return Promise.resolve(encryptData(data, appKeys, sea)).then(function (encryptedData) {
           return Promise.resolve(new Promise(function (resolve, reject) {
-            return gunAppGraph.put(encryptedData, function (ack) {
+            return ref.put(encryptedData, function (ack) {
               return ack.err ? reject(ack.err) : resolve(data);
             });
           })).then(function () {});
@@ -346,7 +338,7 @@
     var remove = function remove(field) {
       try {
         return Promise.resolve(new Promise(function (resolve, reject) {
-          return gunAppGraph.put(null, function (ack) {
+          return ref.put(null, function (ack) {
             return ack.err ? reject(ack.err) : resolve(field);
           });
         })).then(function () {
@@ -384,9 +376,6 @@
         _opts3$interval = _opts3.interval,
         interval = _opts3$interval === void 0 ? 100 : _opts3$interval;
 
-    var _useState7 = react.useState(ref),
-        gunAppGraph = _useState7[0];
-
     var _useSafeReducer2 = useSafeReducer(collectionReducer, {
       collection: new Map()
     }),
@@ -400,7 +389,7 @@
         data: data
       });
     }, 'map', interval);
-    useGunOnNodeUpdated(gunAppGraph.map(), opts, function (item, nodeID) {
+    useGunOnNodeUpdated(ref.map(), opts, function (item, nodeID) {
       if (item) {
         var cleanFn = updater({
           id: nodeID,
@@ -423,7 +412,7 @@
       try {
         return Promise.resolve(encryptData(data, appKeys, sea)).then(function (encryptedData) {
           return Promise.resolve(new Promise(function (resolve, reject) {
-            return gunAppGraph.get(nodeID).put(encryptedData, function (ack) {
+            return ref.get(nodeID).put(encryptedData, function (ack) {
               return ack.err ? reject(ack.err) : resolve(data);
             });
           })).then(function () {
@@ -446,13 +435,13 @@
           var _temp = function () {
             if (!nodeID) {
               return Promise.resolve(new Promise(function (resolve, reject) {
-                return gunAppGraph.set(encryptedData, function (ack) {
+                return ref.set(encryptedData, function (ack) {
                   return ack.err ? reject(ack.err) : resolve(data);
                 });
               })).then(function () {});
             } else {
               return Promise.resolve(new Promise(function (resolve, reject) {
-                return gunAppGraph.get(nodeID).put(encryptedData, function (ack) {
+                return ref.get(nodeID).put(encryptedData, function (ack) {
                   return ack.err ? reject(ack.err) : resolve(data);
                 });
               })).then(function () {});
@@ -469,7 +458,7 @@
     var removeFromSet = function removeFromSet(nodeID) {
       try {
         return Promise.resolve(new Promise(function (resolve, reject) {
-          return gunAppGraph.get(nodeID).put(null, function (ack) {
+          return ref.get(nodeID).put(null, function (ack) {
             return ack.err ? reject(ack.err) : resolve(nodeID);
           });
         })).then(function () {});

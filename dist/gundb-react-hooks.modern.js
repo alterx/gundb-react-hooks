@@ -189,7 +189,6 @@ const useGunOnNodeUpdated = (ref, opts = {
     sea,
     useOpen
   } = opts;
-  const [gunAppGraph] = useState(ref);
   const handler = useRef(null);
   const isMounted = useIsMounted();
   useEffect(() => {
@@ -204,13 +203,13 @@ const useGunOnNodeUpdated = (ref, opts = {
       };
 
       if (useOpen) {
-        if (!gunAppGraph.open) {
+        if (!ref.open) {
           throw new Error('Please include gun/lib/open.');
         } else {
-          gunAppGraph.open(gunCb);
+          ref.open(gunCb);
         }
       } else {
-        gunAppGraph.on(gunCb);
+        ref.on(gunCb);
       }
     }
 
@@ -223,9 +222,8 @@ const useGunOnNodeUpdated = (ref, opts = {
       if (cleanup) {
         cleanup();
       }
-    }; // We just need to set the listener once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    };
+  }, [ref]);
 };
 const useGunState = (ref, opts = {
   appKeys: '',
@@ -238,7 +236,6 @@ const useGunState = (ref, opts = {
     sea,
     interval = 100
   } = opts;
-  const [gunAppGraph] = useState(ref);
   const [fields, dispatch] = useSafeReducer(nodeReducer, {});
   const debouncedHandlers = [];
   const updater = debouncedUpdates(data => {
@@ -247,7 +244,7 @@ const useGunState = (ref, opts = {
       data
     });
   }, 'object', interval);
-  useGunOnNodeUpdated(gunAppGraph, opts, item => {
+  useGunOnNodeUpdated(ref, opts, item => {
     Object.keys(item).forEach(key => {
       let cleanFn = updater({
         id: key,
@@ -264,11 +261,11 @@ const useGunState = (ref, opts = {
 
   const put = async data => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await new Promise((resolve, reject) => gunAppGraph.put(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
+    await new Promise((resolve, reject) => ref.put(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
   };
 
   const remove = async field => {
-    await new Promise((resolve, reject) => gunAppGraph.put(null, ack => ack.err ? reject(ack.err) : resolve(field)));
+    await new Promise((resolve, reject) => ref.put(null, ack => ack.err ? reject(ack.err) : resolve(field)));
     dispatch({
       type: 'remove',
       data: {
@@ -294,7 +291,6 @@ const useGunCollectionState = (ref, opts = {
     sea,
     interval = 100
   } = opts;
-  const [gunAppGraph] = useState(ref);
   const [{
     collection
   }, dispatch] = useSafeReducer(collectionReducer, {
@@ -307,7 +303,7 @@ const useGunCollectionState = (ref, opts = {
       data
     });
   }, 'map', interval);
-  useGunOnNodeUpdated(gunAppGraph.map(), opts, (item, nodeID) => {
+  useGunOnNodeUpdated(ref.map(), opts, (item, nodeID) => {
     if (item) {
       let cleanFn = updater({
         id: nodeID,
@@ -326,7 +322,7 @@ const useGunCollectionState = (ref, opts = {
 
   const updateInSet = async (nodeID, data) => {
     let encryptedData = await encryptData(data, appKeys, sea);
-    await new Promise((resolve, reject) => gunAppGraph.get(nodeID).put(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
+    await new Promise((resolve, reject) => ref.get(nodeID).put(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
     dispatch({
       type: 'update',
       data: _extends({
@@ -339,14 +335,14 @@ const useGunCollectionState = (ref, opts = {
     let encryptedData = await encryptData(data, appKeys, sea);
 
     if (!nodeID) {
-      await new Promise((resolve, reject) => gunAppGraph.set(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
+      await new Promise((resolve, reject) => ref.set(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
     } else {
-      await new Promise((resolve, reject) => gunAppGraph.get(nodeID).put(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
+      await new Promise((resolve, reject) => ref.get(nodeID).put(encryptedData, ack => ack.err ? reject(ack.err) : resolve(data)));
     }
   };
 
   const removeFromSet = async nodeID => {
-    await new Promise((resolve, reject) => gunAppGraph.get(nodeID).put(null, ack => ack.err ? reject(ack.err) : resolve(nodeID)));
+    await new Promise((resolve, reject) => ref.get(nodeID).put(null, ack => ack.err ? reject(ack.err) : resolve(nodeID)));
   };
 
   return {
