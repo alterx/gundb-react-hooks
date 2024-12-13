@@ -1,21 +1,13 @@
 var react = require('react');
 
 function _extends() {
-  _extends = Object.assign || function (target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
-
-      for (var key in source) {
-        if (Object.prototype.hasOwnProperty.call(source, key)) {
-          target[key] = source[key];
-        }
-      }
+  return _extends = Object.assign ? Object.assign.bind() : function (n) {
+    for (var e = 1; e < arguments.length; e++) {
+      var t = arguments[e];
+      for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]);
     }
-
-    return target;
-  };
-
-  return _extends.apply(this, arguments);
+    return n;
+  }, _extends.apply(null, arguments);
 }
 
 var encryptData = function encryptData(data, keys, sea) {
@@ -36,28 +28,23 @@ var debouncedUpdates = function debouncedUpdates(dispatcher, type, timeout) {
   if (type === void 0) {
     type = 'object';
   }
-
   if (timeout === void 0) {
     timeout = 100;
   }
-
   var updates = [];
   var handler;
   return function (update) {
     updates.push(update);
-
     if (!handler) {
       handler = setTimeout(function () {
         var newStateSlice = updates.reduce(function (previousState, _ref) {
           var id = _ref.id,
-              data = _ref.data;
-
+            data = _ref.data;
           if (type === 'object') {
             previousState[id] = data;
           } else {
             previousState.set(id, data);
           }
-
           return previousState;
         }, type === 'object' ? {} : new Map());
         dispatcher(newStateSlice);
@@ -65,7 +52,6 @@ var debouncedUpdates = function debouncedUpdates(dispatcher, type, timeout) {
         handler = null;
       }, timeout);
     }
-
     return function () {
       clearTimeout(handler);
       updates = [];
@@ -85,73 +71,60 @@ var useIsMounted = function useIsMounted() {
 };
 var nodeReducer = function nodeReducer(state, _ref2) {
   var data = _ref2.data,
-      type = _ref2.type;
-
+    type = _ref2.type;
   switch (type) {
     case 'add':
       return _extends({}, state, data);
-
     case 'remove':
       delete state[data.nodeID];
       return _extends({}, state);
-
     default:
       throw new Error();
   }
 };
 var collectionReducer = function collectionReducer(state, _ref3) {
   var _state$collection2, _state$collection3;
-
   var data = _ref3.data,
-      type = _ref3.type;
-
+    type = _ref3.type;
   switch (type) {
     case 'add':
       data.forEach(function (data) {
         var _state$collection;
-
-        (_state$collection = state.collection) == null ? void 0 : _state$collection.set(data.nodeID, data);
+        (_state$collection = state.collection) == null || _state$collection.set(data.nodeID, data);
       });
       return _extends({}, state, {
         collection: state.collection
       });
-
     case 'update':
-      (_state$collection2 = state.collection) == null ? void 0 : _state$collection2.set(data.nodeID, data);
+      (_state$collection2 = state.collection) == null || _state$collection2.set(data.nodeID, data);
       return _extends({}, state, {
         collection: state.collection
       });
-
     case 'remove':
-      (_state$collection3 = state.collection) == null ? void 0 : _state$collection3["delete"](data.nodeID);
+      (_state$collection3 = state.collection) == null || _state$collection3["delete"](data.nodeID);
       return _extends({}, state, {
         collection: state.collection
       });
-
     default:
       throw new Error();
   }
 };
 var useSafeReducer = function useSafeReducer(reducer, initialState) {
   var _useReducer = react.useReducer(reducer, initialState),
-      state = _useReducer[0],
-      dispatch = _useReducer[1];
-
+    state = _useReducer[0],
+    dispatch = _useReducer[1];
   var isMounted = useIsMounted();
-
   function safeDispatch(args) {
     if (isMounted.current) {
       dispatch(args);
     }
   }
-
   return [state, safeDispatch];
 };
 var useGun = function useGun(Gun, opts) {
   var _useState = react.useState(Gun(_extends({}, opts))),
-      gun = _useState[0],
-      setGun = _useState[1];
-
+    gun = _useState[0],
+    setGun = _useState[1];
   react.useEffect(function () {
     if (opts) {
       setGun(Gun(_extends({}, opts)));
@@ -161,9 +134,8 @@ var useGun = function useGun(Gun, opts) {
 };
 var useGunNamespace = function useGunNamespace(gun, soul) {
   var _useState2 = react.useState(soul ? gun.user(soul) : gun.user()),
-      namespace = _useState2[0],
-      setNamespace = _useState2[1];
-
+    namespace = _useState2[0],
+    setNamespace = _useState2[1];
   react.useEffect(function () {
     if (gun && !namespace) {
       setNamespace(soul ? gun.user(soul) : gun.user());
@@ -175,15 +147,12 @@ var useGunKeyAuth = function useGunKeyAuth(gun, keys, triggerAuth) {
   if (triggerAuth === void 0) {
     triggerAuth = true;
   }
-
   // Will attempt to perform a login (when triggerAuth is set to true),
   // or, if false, returns a namespaced gun node
   var namespacedGraph = useGunNamespace(gun);
-
   var _useState3 = react.useState(false),
-      isLoggedIn = _useState3[0],
-      setIsLoggedIn = _useState3[1];
-
+    isLoggedIn = _useState3[0],
+    setIsLoggedIn = _useState3[1];
   gun.on('auth', function () {
     setIsLoggedIn(true);
   });
@@ -196,9 +165,8 @@ var useGunKeyAuth = function useGunKeyAuth(gun, keys, triggerAuth) {
 };
 var useGunKeys = function useGunKeys(sea, existingKeys) {
   var _useState4 = react.useState(existingKeys),
-      newKeys = _useState4[0],
-      setNewKeys = _useState4[1];
-
+    newKeys = _useState4[0],
+    setNewKeys = _useState4[1];
   react.useEffect(function () {
     var getKeySet = function getKeySet() {
       try {
@@ -209,11 +177,9 @@ var useGunKeys = function useGunKeys(sea, existingKeys) {
         return Promise.reject(e);
       }
     };
-
     if (!newKeys && !existingKeys) {
       getKeySet();
     }
-
     if (existingKeys) {
       setNewKeys(existingKeys);
     }
@@ -228,29 +194,22 @@ var useGunOnNodeUpdated = function useGunOnNodeUpdated(ref, opts, cb, cleanup) {
       useOpen: false
     };
   }
-
   var _opts = opts,
-      appKeys = _opts.appKeys,
-      sea = _opts.sea,
-      useOpen = _opts.useOpen;
+    appKeys = _opts.appKeys,
+    sea = _opts.sea,
+    useOpen = _opts.useOpen;
   var handler = react.useRef(null);
   var isMounted = useIsMounted();
   react.useEffect(function () {
     if (isMounted.current) {
       var gunCb = function gunCb(encryptedField, nodeID, message, event) {
-        try {
-          return Promise.resolve(decryptData(encryptedField, appKeys, sea)).then(function (decryptedField) {
-            cb(decryptedField, nodeID);
-
-            if (!handler.current) {
-              handler.current = event;
-            }
-          });
-        } catch (e) {
-          return Promise.reject(e);
-        }
+        return Promise.resolve(decryptData(encryptedField, appKeys, sea)).then(function (decryptedField) {
+          cb(decryptedField, nodeID);
+          if (!handler.current) {
+            handler.current = event;
+          }
+        });
       };
-
       if (useOpen) {
         if (!ref.open) {
           throw new Error('Please include gun/lib/open.');
@@ -261,13 +220,11 @@ var useGunOnNodeUpdated = function useGunOnNodeUpdated(ref, opts, cb, cleanup) {
         ref.on(gunCb);
       }
     }
-
     return function () {
       if (handler.current) {
         //cleanup gun .on listener
         handler.current.off();
       }
-
       if (cleanup) {
         cleanup();
       }
@@ -283,17 +240,14 @@ var useGunState = function useGunState(ref, opts) {
       useOpen: false
     };
   }
-
   var _opts2 = opts,
-      appKeys = _opts2.appKeys,
-      sea = _opts2.sea,
-      _opts2$interval = _opts2.interval,
-      interval = _opts2$interval === void 0 ? 100 : _opts2$interval;
-
+    appKeys = _opts2.appKeys,
+    sea = _opts2.sea,
+    _opts2$interval = _opts2.interval,
+    interval = _opts2$interval === void 0 ? 100 : _opts2$interval;
   var _useSafeReducer = useSafeReducer(nodeReducer, {}),
-      fields = _useSafeReducer[0],
-      dispatch = _useSafeReducer[1];
-
+    fields = _useSafeReducer[0],
+    dispatch = _useSafeReducer[1];
   var debouncedHandlers = [];
   var updater = debouncedUpdates(function (data) {
     dispatch({
@@ -316,22 +270,17 @@ var useGunState = function useGunState(ref, opts) {
         return c();
       });
     }
-  }); // Working with root node fields
-
+  });
+  // Working with root node fields
   var put = function put(data) {
-    try {
-      return Promise.resolve(encryptData(data, appKeys, sea)).then(function (encryptedData) {
-        return Promise.resolve(new Promise(function (resolve, reject) {
-          return ref.put(encryptedData, function (ack) {
-            return ack.err ? reject(ack.err) : resolve(data);
-          });
-        })).then(function () {});
-      });
-    } catch (e) {
-      return Promise.reject(e);
-    }
+    return Promise.resolve(encryptData(data, appKeys, sea)).then(function (encryptedData) {
+      return Promise.resolve(new Promise(function (resolve, reject) {
+        return ref.put(encryptedData, function (ack) {
+          return ack.err ? reject(ack.err) : resolve(data);
+        });
+      })).then(function () {});
+    });
   };
-
   var remove = function remove(field) {
     try {
       return Promise.resolve(new Promise(function (resolve, reject) {
@@ -350,7 +299,6 @@ var useGunState = function useGunState(ref, opts) {
       return Promise.reject(e);
     }
   };
-
   return {
     fields: fields,
     put: put,
@@ -366,19 +314,16 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
       useOpen: false
     };
   }
-
   var _opts3 = opts,
-      appKeys = _opts3.appKeys,
-      sea = _opts3.sea,
-      _opts3$interval = _opts3.interval,
-      interval = _opts3$interval === void 0 ? 100 : _opts3$interval;
-
+    appKeys = _opts3.appKeys,
+    sea = _opts3.sea,
+    _opts3$interval = _opts3.interval,
+    interval = _opts3$interval === void 0 ? 100 : _opts3$interval;
   var _useSafeReducer2 = useSafeReducer(collectionReducer, {
-    collection: new Map()
-  }),
-      collection = _useSafeReducer2[0].collection,
-      dispatch = _useSafeReducer2[1];
-
+      collection: new Map()
+    }),
+    collection = _useSafeReducer2[0].collection,
+    dispatch = _useSafeReducer2[1];
   var debouncedHandlers = [];
   var updater = debouncedUpdates(function (data) {
     dispatch({
@@ -403,67 +348,62 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
         return c();
       });
     }
-  }); // Working with Sets
-
+  });
+  // Working with Sets
   var updateInSet = function updateInSet(nodeID, data) {
-    try {
-      return Promise.resolve(encryptData(data, appKeys, sea)).then(function (encryptedData) {
-        return Promise.resolve(new Promise(function (resolve, reject) {
-          return ref.get(nodeID).put(encryptedData, function (ack) {
-            return ack.err ? reject(ack.err) : resolve(data);
-          });
-        })).then(function () {
-          dispatch({
-            type: 'update',
-            data: _extends({
-              nodeID: nodeID
-            }, data)
-          });
+    return Promise.resolve(encryptData(data, appKeys, sea)).then(function (encryptedData) {
+      return Promise.resolve(new Promise(function (resolve, reject) {
+        return ref.get(nodeID).put(encryptedData, function (ack) {
+          return ack.err ? reject(ack.err) : resolve(data);
+        });
+      })).then(function () {
+        dispatch({
+          type: 'update',
+          data: _extends({
+            nodeID: nodeID
+          }, data)
         });
       });
-    } catch (e) {
-      return Promise.reject(e);
-    }
+    });
   };
-
   var addToSet = function addToSet(data, nodeID) {
-    try {
-      return Promise.resolve(encryptData(data, appKeys, sea)).then(function (encryptedData) {
-        var _temp = function () {
-          if (!nodeID) {
-            return Promise.resolve(new Promise(function (resolve, reject) {
-              return ref.set(encryptedData, function (ack) {
-                return ack.err ? reject(ack.err) : resolve(data);
-              });
-            })).then(function () {});
-          } else {
-            return Promise.resolve(new Promise(function (resolve, reject) {
-              return ref.get(nodeID).put(encryptedData, function (ack) {
-                return ack.err ? reject(ack.err) : resolve(data);
-              });
-            })).then(function () {});
-          }
-        }();
-
-        if (_temp && _temp.then) return _temp.then(function () {});
-      });
-    } catch (e) {
-      return Promise.reject(e);
-    }
+    return Promise.resolve(encryptData(data, appKeys, sea)).then(function (encryptedData) {
+      var _temp = function () {
+        if (!nodeID) {
+          return Promise.resolve(new Promise(function (resolve, reject) {
+            return ref.set(encryptedData, function (ack) {
+              return ack.err ? reject(ack.err) : resolve(data);
+            });
+          })).then(function () {});
+        } else {
+          return Promise.resolve(new Promise(function (resolve, reject) {
+            return ref.get(nodeID).put(encryptedData, function (ack) {
+              return ack.err ? reject(ack.err) : resolve(data);
+            });
+          })).then(function () {});
+        }
+      }();
+      if (_temp && _temp.then) return _temp.then(function () {});
+    });
   };
-
   var removeFromSet = function removeFromSet(nodeID) {
     try {
       return Promise.resolve(new Promise(function (resolve, reject) {
         return ref.get(nodeID).put(null, function (ack) {
           return ack.err ? reject(ack.err) : resolve(nodeID);
         });
-      })).then(function () {});
+      })).then(function () {
+        dispatch({
+          type: 'remove',
+          data: {
+            nodeID: nodeID
+          }
+        });
+      });
     } catch (e) {
       return Promise.reject(e);
     }
   };
-
   return {
     collection: collection,
     addToSet: addToSet,

@@ -1,6 +1,6 @@
 {
   "name": "@altrx/gundb-react-hooks",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "description": "GUNDB hooks for React/Preact",
   "browser": "./dist/gundb-react-hooks.umd.js",
   "umd:main": "./dist/gundb-react-hooks.umd.js",
@@ -71,13 +71,13 @@
   },
   "devDependencies": {
     "@skypack/package-check": "^0.2.2",
-    "husky": "^4.2.5",
-    "microbundle": "^0.12.4",
-    "prettier": "^2.0.5",
-    "pretty-quick": "^2.0.1",
+    "husky": "^9.1.7",
+    "microbundle": "^0.15.1",
+    "prettier": "^3.4.2",
+    "pretty-quick": "^4.0.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "rimraf": "^3.0.2"
+    "rimraf": "^6.0.1"
   },
   "husky": {
     "hooks": {

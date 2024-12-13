@@ -1,23 +1,23 @@
-export declare type GunStatic = any;
-export declare type GunRef = any;
-export declare type NamespacedRef = any;
-export declare type KeyPair = {
+export type GunStatic = any;
+export type GunRef = any;
+export type NamespacedRef = any;
+export type KeyPair = {
     pub: string;
     priv: string;
     epub: string;
     epriv: string;
 };
-export declare type Options = {
+export type Options = {
     appKeys?: undefined | string | KeyPair;
     sea?: any;
     interval?: number;
     useOpen?: boolean;
 };
-export declare type NodeT<T> = T & {
+export type NodeT<T> = T & {
     nodeID: string;
     [key: string]: any;
 };
-export declare type ActionType<T> = {
+export type ActionType<T> = {
     type: 'add';
     data: NodeT<T>;
 } | {
@@ -27,7 +27,7 @@ export declare type ActionType<T> = {
     type: 'remove';
     data: NodeT<T>;
 };
-export declare type UpdateType = {
+export type UpdateType = {
     id: string;
     data: any;
 };
@@ -64,10 +64,10 @@ export declare const nodeReducer: <T>(state: NodeT<T>, { data, type }: ActionTyp
 export declare const collectionReducer: <T>(state: CollectionState<T>, { data, type }: ActionType<T>) => CollectionState<T>;
 export declare const useSafeReducer: <T>(reducer: any, initialState: T) => [T, Function];
 export declare const useGun: (Gun: GunStatic, opts: GunOptions) => any;
-export declare const useGunNamespace: (gun: GunRef, soul?: string | undefined) => any;
+export declare const useGunNamespace: (gun: GunRef, soul?: string) => any;
 export declare const useGunKeyAuth: (gun: GunRef, keys: KeyPair, triggerAuth?: boolean) => any[];
 export declare const useGunKeys: (sea: any, existingKeys?: KeyPair | undefined | null) => any;
-export declare const useGunOnNodeUpdated: <T>(ref: GunRef, opts: Options | undefined, cb: (data: T, nodeID: string) => void, cleanup?: (() => void) | undefined) => void;
+export declare const useGunOnNodeUpdated: <T>(ref: GunRef, opts: Options | undefined, cb: (data: T, nodeID: string) => void, cleanup?: () => void) => void;
 export declare const useGunState: <T>(ref: GunRef, opts?: Options) => {
     fields: T;
     put: (data: T) => Promise<void>;
@@ -75,7 +75,7 @@ export declare const useGunState: <T>(ref: GunRef, opts?: Options) => {
 };
 export declare const useGunCollectionState: <T>(ref: GunRef, opts?: Options) => {
     collection: Map<string, T> | undefined;
-    addToSet: (data: T, nodeID?: string | undefined) => Promise<void>;
+    addToSet: (data: T, nodeID?: string) => Promise<void>;
     updateInSet: (nodeID: string, data: T) => Promise<void>;
     removeFromSet: (nodeID: string) => Promise<void>;
 };

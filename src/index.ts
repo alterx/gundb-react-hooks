@@ -455,6 +455,7 @@ export const useGunCollectionState = <T>(
         .get(nodeID)
         .put(null, (ack: any) => (ack.err ? reject(ack.err) : resolve(nodeID)))
     );
+    dispatch({ type: 'remove', data: { nodeID } });
   };
 
   return { collection, addToSet, updateInSet, removeFromSet };
