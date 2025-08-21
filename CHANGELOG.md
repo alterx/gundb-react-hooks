@@ -120,85 +120,11 @@ It also consolidates the hooks and providers available at https://github.com/alt
 - **Performance optimization examples**
 - **Debugging and development workflows**
 
-### 🔧 Migration Guide
+### Migration Guide
 
 #### From v0.9.x to v1.0.0
 
-**1. Update Hook Usage:**
-
-```typescript
-// Before
-const { fields, put, remove } = useGunState(ref);
-
-// After
-const { fields, put, remove, error, isLoading } = useGunState(ref);
-if (error) {
-  console.error('Gun operation failed:', error);
-}
-```
-
-**2. Update Collection Usage:**
-
-```typescript
-// Before
-const { collection, addToSet } = useGunCollectionState(ref);
-const items = Object.values(collection);
-
-// After
-const { items, addToSet, error, count } = useGunCollectionState(ref);
-// items is now directly available as an array
-```
-
-**3. Update Authentication:**
-
-```typescript
-// Before
-const [user, isLoggedIn] = useGunKeyAuth(gun, keys);
-
-// After
-const [user, isLoggedIn, authError] = useGunKeyAuth(gun, keys);
-if (authError) {
-  console.error('Authentication failed:', authError);
-}
-```
-
-**4. Optional: Use Context Provider:**
-
-```typescript
-// New pattern (optional)
-<GunProvider gun={Gun} options={opts}>
-  <App />
-</GunProvider>
-
-// Then in components:
-const gun = useGunContext();
-```
-
-**5. New: Use Authentication Provider:**
-
-```typescript
-// Set up authentication
-<AuthProvider
-  Gun={Gun}
-  sea={SEA}
-  storage={localStorage}
-  gunOpts={gunOptions}
->
-  <App />
-</AuthProvider>
-
-// Then in components:
-const { user, login, logout, isLoggedIn, appKeys } = useAuth();
-
-// Login with new keys
-await login();
-
-// Login with existing keys
-await login(savedKeys);
-
-// Logout
-logout(() => console.log('Logged out'));
-```
+For detailed migration instructions and compatibility information, see the detailed documentation for each hook.
 
 ### Performance Improvements
 

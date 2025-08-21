@@ -402,18 +402,7 @@ const handleAddItem = useCallback(
 
 ## Migration from v0.9.x
 
-See [MIGRATION.md](./MIGRATION.md) for detailed migration instructions.
-
-### Quick Migration Example
-
-```typescript
-// v0.9.x
-const { fields, put } = useGunState(ref);
-
-// v1.0.0
-const { fields, put, error, isLoading } = useGunState(ref);
-if (error) console.error('Error:', error.err);
-```
+For detailed migration instructions and compatibility information, see the detailed documentation for each hook.
 
 ## Development & Testing
 
