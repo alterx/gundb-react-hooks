@@ -2,13 +2,17 @@
 
 A hook that creates or retrieves a namespaced Gun graph reference with enhanced error handling and type safety.
 
+## Overview
+
+`useGunNamespace` provides a way to create isolated data spaces within your GunDB application. It allows you to organize data logically, implement multi-tenancy, and manage separate contexts within your application while maintaining proper error handling and type safety.
+
 ## API Reference
 
 ### Signature
 
 ```typescript
 useGunNamespace(
-  gun: IGunInstance, 
+  gun: IGunInstance,
   soul?: string
 ): IGunReference
 ```
@@ -21,7 +25,7 @@ useGunNamespace(
 ### Return Type
 
 ```typescript
-IGunReference  // Namespaced Gun graph reference
+IGunReference; // Namespaced Gun graph reference
 ```
 
 ## Basic Usage
@@ -35,15 +39,15 @@ import Gun from 'gun';
 
 export const NamespaceExample: React.FC = () => {
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
-  
+
   // Create a new namespace with auto-generated soul
   const namespacedGraph = useGunNamespace(gun);
-  
+
   // Use the namespace for state management
-  const { 
-    fields: userData, 
+  const {
+    fields: userData,
     put: updateUserData,
-    error: userError 
+    error: userError
   } = useGunState(namespacedGraph);
 
   const handleSaveData = async () => {
@@ -71,7 +75,7 @@ export const NamespaceExample: React.FC = () => {
   return (
     <div className="namespace-demo">
       <h3>Auto-Generated Namespace</h3>
-      
+
       <div className="namespace-info">
         <p><strong>Namespace Soul:</strong> {namespacedGraph._.opt?.soul || 'Generating...'}</p>
         <p><strong>Data:</strong> {JSON.stringify(userData, null, 2)}</p>
@@ -94,16 +98,16 @@ import { useGun, useGunNamespace, useGunState } from '@altrx/gundb-react-hooks';
 export const SpecificNamespaceExample: React.FC = () => {
   const [targetSoul, setTargetSoul] = useState<string>('user_settings_12345');
   const [currentSoul, setCurrentSoul] = useState<string>(targetSoul);
-  
+
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
-  
+
   // Connect to specific namespace
   const namespacedGraph = useGunNamespace(gun, currentSoul);
-  
-  const { 
-    fields: settings, 
+
+  const {
+    fields: settings,
     put: updateSettings,
-    error: settingsError 
+    error: settingsError
   } = useGunState(namespacedGraph);
 
   const switchNamespace = () => {
@@ -127,7 +131,7 @@ export const SpecificNamespaceExample: React.FC = () => {
   return (
     <div className="specific-namespace">
       <h3>Specific Namespace</h3>
-      
+
       <div className="namespace-controls">
         <input
           type="text"
@@ -186,14 +190,14 @@ export const MultiTenantApp: React.FC = () => {
   ]);
 
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
-  
+
   // Create namespace for selected tenant
   const tenantGraph = useGunNamespace(gun, selectedTenant?.namespace);
-  
-  const { 
-    fields: tenantData, 
+
+  const {
+    fields: tenantData,
     put: updateTenantData,
-    error: tenantError 
+    error: tenantError
   } = useGunState(tenantGraph);
 
   const selectTenant = (tenant: Tenant) => {
@@ -202,7 +206,7 @@ export const MultiTenantApp: React.FC = () => {
 
   const saveTenantData = async () => {
     if (!selectedTenant) return;
-    
+
     try {
       await updateTenantData({
         tenantId: selectedTenant.id,
@@ -222,7 +226,7 @@ export const MultiTenantApp: React.FC = () => {
   return (
     <div className="multi-tenant-app">
       <h3>Multi-Tenant Application</h3>
-      
+
       <div className="tenant-selector">
         <h4>Select Tenant:</h4>
         {tenants.map(tenant => (
@@ -240,7 +244,7 @@ export const MultiTenantApp: React.FC = () => {
         <div className="tenant-workspace">
           <h4>Tenant: {selectedTenant.name}</h4>
           <p><strong>Namespace:</strong> {selectedTenant.namespace}</p>
-          
+
           {tenantError ? (
             <div className="error">
               <p>Error loading tenant data: {tenantError.err}</p>
@@ -284,24 +288,24 @@ export const ProjectManager: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
 
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
-  
+
   // Create namespace for selected project
   const projectGraph = useGunNamespace(gun, selectedProject || undefined);
-  
-  const { 
-    collection: projectData, 
+
+  const {
+    collection: projectData,
     addToCollection: addProjectData,
-    error: projectError 
+    error: projectError
   } = useGunCollectionState<Project>(projectGraph);
 
   const createProject = () => {
     if (!newProjectName.trim()) return;
-    
+
     const projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     setProjects(prev => [...prev, projectId]);
     setSelectedProject(projectId);
     setNewProjectName('');
-    
+
     // Initialize project data
     setTimeout(() => {
       addProjectData({
@@ -319,7 +323,7 @@ export const ProjectManager: React.FC = () => {
 
   const addProjectItem = async () => {
     if (!selectedProject) return;
-    
+
     try {
       await addProjectData({
         id: `item_${Date.now()}`,
@@ -335,7 +339,7 @@ export const ProjectManager: React.FC = () => {
   return (
     <div className="project-manager">
       <h3>Dynamic Project Namespaces</h3>
-      
+
       <div className="project-creation">
         <h4>Create New Project:</h4>
         <input
@@ -358,7 +362,7 @@ export const ProjectManager: React.FC = () => {
             onClick={() => selectProject(projectId)}
             className={selectedProject === projectId ? 'active' : ''}
           >
-            {projectId.replace('project_', '').split('_')[1]} 
+            {projectId.replace('project_', '').split('_')[1]}
           </button>
         ))}
       </div>
@@ -366,7 +370,7 @@ export const ProjectManager: React.FC = () => {
       {selectedProject && (
         <div className="project-workspace">
           <h4>Project: {selectedProject}</h4>
-          
+
           {projectError ? (
             <div className="error">
               <p>Error: {projectError.err}</p>
@@ -378,7 +382,7 @@ export const ProjectManager: React.FC = () => {
                   Add Task
                 </button>
               </div>
-              
+
               <div className="project-items">
                 <h5>Project Items ({Object.keys(projectData).length}):</h5>
                 {Object.entries(projectData).map(([key, item]) => (
@@ -398,28 +402,15 @@ export const ProjectManager: React.FC = () => {
 };
 ```
 
-## Best Practices
+## Error Handling
 
-### Namespace Organization
-
-```typescript
-// Good: Use descriptive, hierarchical naming
-const userNamespace = useGunNamespace(gun, `user_${userId}`);
-const settingsNamespace = useGunNamespace(gun, `user_${userId}_settings`);
-const chatNamespace = useGunNamespace(gun, `chat_${chatId}`);
-
-// Avoid: Generic or unclear names
-const namespace1 = useGunNamespace(gun, 'data');
-const namespace2 = useGunNamespace(gun, 'stuff');
-```
-
-### Error Handling Pattern
+### Namespace Error Management
 
 ```typescript
 const NamespaceWithErrorHandling: React.FC = () => {
   const [soul, setSoul] = useState<string>('valid_namespace');
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
-  
+
   const namespacedGraph = useGunNamespace(gun, soul);
   const { fields, error } = useGunState(namespacedGraph);
 
@@ -453,55 +444,26 @@ const NamespaceWithErrorHandling: React.FC = () => {
 
 ## Migration from v0.9.x
 
-### Before (v0.9.x)
+## Best Practices
+
+### Namespace Organization
 
 ```typescript
-// Simple namespace creation without error handling
-const namespacedGraph = useGunNamespace(gun);
-const existingNamespace = useGunNamespace(gun, '~soul');
+// Good: Use descriptive, hierarchical naming
+const userNamespace = useGunNamespace(gun, `user_${userId}`);
+const settingsNamespace = useGunNamespace(gun, `user_${userId}_settings`);
+const chatNamespace = useGunNamespace(gun, `chat_${chatId}`);
 
-// No error handling for invalid souls or connection issues
+// Avoid: Generic or unclear names
+const namespace1 = useGunNamespace(gun, 'data');
+const namespace2 = useGunNamespace(gun, 'stuff');
 ```
 
-### After (v1.0.0)
-
-```typescript
-// Enhanced namespace creation with proper error handling
-const namespacedGraph = useGunNamespace(gun, soul);
-const { fields, error } = useGunState(namespacedGraph);
-
-// Comprehensive error handling
-if (error?.context?.includes('namespace')) {
-  // Handle namespace-specific errors
-  return <NamespaceErrorComponent error={error} />;
-}
-
-// Validate namespace before use
-if (namespacedGraph && !error) {
-  // Safe to use namespace
-}
-```
-
-## Use Cases
-
-1. **Multi-tenant Applications** - Isolate data per tenant
-2. **User Data Isolation** - Separate user-specific data
-3. **Feature Modules** - Organize data by application features
-4. **Environment Separation** - Different namespaces for dev/staging/prod
-5. **Data Organization** - Logical grouping of related data
-6. **Access Control** - Control access to specific data namespaces
-
-## Security Considerations
-
-- **Namespace Isolation**: Namespaces provide logical separation, not security isolation
-- **Access Control**: Implement proper authentication and authorization
-- **Soul Validation**: Validate namespace souls to prevent injection attacks
-- **Data Encryption**: Use Gun's encryption features for sensitive data
-- **Audit Trails**: Track namespace access and modifications
-
-## Performance Tips
-
-- **Reuse Namespaces**: Don't create new namespaces unnecessarily
-- **Cache References**: Store namespace references for reuse
-- **Cleanup**: Remove unused namespace subscriptions
-- **Batch Operations**: Group related operations within the same namespace
+1. **Use Descriptive Names** - Create meaningful namespace identifiers
+2. **Implement Hierarchy** - Use structured naming conventions
+3. **Isolate Data Properly** - Separate different types of data
+4. **Handle Errors Gracefully** - Always check for namespace errors
+5. **Cache References** - Reuse namespace references when possible
+6. **Validate Souls** - Ensure namespace identifiers are safe
+7. **Monitor Performance** - Track namespace usage and cleanup
+8. **Document Structure** - Maintain clear namespace organization

@@ -2,6 +2,10 @@
 
 A hook that subscribes to Gun node updates with comprehensive error handling, dependency tracking, and cleanup management.
 
+## Overview
+
+`useGunOnNodeUpdated` provides real-time subscription functionality for GunDB nodes. It manages subscriptions automatically, handles cleanup to prevent memory leaks, and offers comprehensive error handling for robust real-time applications.
+
 ## API Reference
 
 ### Signature
@@ -51,17 +55,17 @@ interface UserProfile {
 export const UserProfileWatcher: React.FC = () => {
   const [userId] = useState('user_12345');
   const [updates, setUpdates] = useState<any[]>([]);
-  
+
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
   const userNode = gun.get('users').get(userId);
-  
+
   // Subscribe to user profile updates
   useGunOnNodeUpdated<UserProfile>(
     userNode,
     [userId], // Re-subscribe when userId changes
     (data, key, msg, ev) => {
       console.log('User profile updated:', data);
-      
+
       // Track all updates
       setUpdates(prev => [{
         timestamp: new Date().toISOString(),
@@ -88,7 +92,7 @@ export const UserProfileWatcher: React.FC = () => {
   return (
     <div className="user-profile-watcher">
       <h3>User Profile Watcher</h3>
-      
+
       <div className="current-profile">
         <h4>Current Profile:</h4>
         <pre>{JSON.stringify(currentProfile, null, 2)}</pre>
@@ -128,13 +132,13 @@ interface ChatMessage {
 export const MultiChatWatcher: React.FC = () => {
   const [activeRooms, setActiveRooms] = useState<string[]>(['general', 'tech', 'random']);
   const [roomUpdates, setRoomUpdates] = useState<{[room: string]: ChatMessage[]}>({});
-  
+
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
 
   // Subscribe to each chat room
   activeRooms.forEach(roomId => {
     const roomNode = gun.get('chat').get(roomId);
-    
+
     useGunOnNodeUpdated<ChatMessage>(
       roomNode,
       [roomId, gun], // Re-subscribe when room or gun changes
@@ -174,7 +178,7 @@ export const MultiChatWatcher: React.FC = () => {
   return (
     <div className="multi-chat-watcher">
       <h3>Multi-Chat Room Watcher</h3>
-      
+
       <div className="room-controls">
         <button onClick={addRoom}>➕ Add Room</button>
       </div>
@@ -189,7 +193,7 @@ export const MultiChatWatcher: React.FC = () => {
               </span>
               <button onClick={() => removeRoom(roomId)}>❌</button>
             </div>
-            
+
             <div className="room-messages">
               {(roomUpdates[roomId] || []).map((msg, index) => (
                 <div key={index} className="message">
@@ -219,14 +223,14 @@ export const ConditionalSubscriptionExample: React.FC = () => {
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
-  
+
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
   const appKeys = useGunKeys(SEA);
   const [user, isLoggedIn] = useGunKeyAuth(gun, appKeys!);
 
   // Only subscribe when authenticated and monitoring is enabled
   const shouldSubscribe = isLoggedIn && isMonitoring && appKeys;
-  
+
   if (shouldSubscribe) {
     // Subscribe to user's notifications
     useGunOnNodeUpdated(
@@ -281,7 +285,7 @@ export const ConditionalSubscriptionExample: React.FC = () => {
   return (
     <div className="conditional-subscription">
       <h3>🔔 Notification Monitor</h3>
-      
+
       <div className="monitor-controls">
         <label>
           <input
@@ -294,7 +298,7 @@ export const ConditionalSubscriptionExample: React.FC = () => {
       </div>
 
       <div className="subscription-status">
-        <p><strong>Status:</strong> 
+        <p><strong>Status:</strong>
           {shouldSubscribe ? 'Monitoring Active' : 'Monitoring Disabled'}
         </p>
         <p><strong>Notifications:</strong> {notifications.length}</p>
@@ -307,8 +311,8 @@ export const ConditionalSubscriptionExample: React.FC = () => {
             <p>No notifications yet...</p>
           ) : (
             notifications.map((notif, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className={`notification ${notif.type === 'announcement' ? 'announcement' : ''}`}
               >
                 <div className="notif-header">
@@ -346,7 +350,9 @@ export const ConditionalSubscriptionExample: React.FC = () => {
 };
 ```
 
-### Error Handling and Monitoring
+## Error Handling
+
+### Robust Error Management
 
 ```typescript
 import React, { useState, useCallback } from 'react';
@@ -359,32 +365,30 @@ export const RobustSubscriptionExample: React.FC = () => {
     lastUpdate: null as Date | null,
     lastError: null as string | null
   });
-  
+
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
   const dataNode = gun.get('monitoring_test');
 
   const handleUpdate = useCallback((data: any, key?: string, msg?: any, ev?: any) => {
     try {
       console.log('Update received:', { data, key, msg, ev });
-      
+
       setSubscriptionStats(prev => ({
         ...prev,
         updates: prev.updates + 1,
         lastUpdate: new Date(),
-        lastError: null // Clear error on successful update
+        lastError: null
       }));
 
-      // Validate data structure
       if (data && typeof data === 'object') {
-        // Process valid data
         console.log('Valid data processed:', data);
       } else {
         throw new Error('Invalid data format received');
       }
-      
+
     } catch (error) {
       console.error('Error processing update:', error);
-      
+
       setSubscriptionStats(prev => ({
         ...prev,
         errors: prev.errors + 1,
@@ -393,113 +397,29 @@ export const RobustSubscriptionExample: React.FC = () => {
     }
   }, []);
 
-  const handleCleanup = useCallback(() => {
-    console.log('Subscription cleanup executed');
-    
-    // Reset stats on cleanup
-    setSubscriptionStats({
-      updates: 0,
-      errors: 0,
-      lastUpdate: null,
-      lastError: null
-    });
-  }, []);
-
-  // Robust subscription with error handling
   useGunOnNodeUpdated(
     dataNode,
-    [gun], // Re-subscribe if gun instance changes
+    [gun],
     handleUpdate,
-    handleCleanup
+    useCallback(() => {
+      console.log('Subscription cleanup executed');
+      setSubscriptionStats({
+        updates: 0,
+        errors: 0,
+        lastUpdate: null,
+        lastError: null
+      });
+    }, [])
   );
 
-  const generateTestData = () => {
-    const testData = {
-      id: Math.random().toString(36).substr(2, 9),
-      message: `Test message ${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      valid: true
-    };
-    
-    dataNode.put(testData);
-  };
-
-  const generateInvalidData = () => {
-    // Intentionally send invalid data to test error handling
-    dataNode.put(null);
-  };
-
   return (
-    <div className="robust-subscription">
-      <h3>Robust Subscription Example</h3>
-      
-      <div className="subscription-stats">
-        <h4>Subscription Statistics:</h4>
-        <div className="stats-grid">
-          <div className="stat">
-            <label>Updates Received:</label>
-            <span className="value">{subscriptionStats.updates}</span>
-          </div>
-          <div className="stat">
-            <label>Errors Encountered:</label>
-            <span className={`value ${subscriptionStats.errors > 0 ? 'error' : ''}`}>
-              {subscriptionStats.errors}
-            </span>
-          </div>
-          <div className="stat">
-            <label>Last Update:</label>
-            <span className="value">
-              {subscriptionStats.lastUpdate 
-                ? subscriptionStats.lastUpdate.toLocaleTimeString()
-                : 'Never'
-              }
-            </span>
-          </div>
-          {subscriptionStats.lastError && (
-            <div className="stat error">
-              <label>Last Error:</label>
-              <span className="value">{subscriptionStats.lastError}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="test-controls">
-        <h4>Test Controls:</h4>
-        <button onClick={generateTestData}>
-          Send Valid Data
-        </button>
-        <button onClick={generateInvalidData}>
-          Send Invalid Data
-        </button>
-        <button onClick={() => {
-          setSubscriptionStats({
-            updates: 0,
-            errors: 0,
-            lastUpdate: null,
-            lastError: null
-          });
-        }}>
-          Reset Stats
-        </button>
-      </div>
-
-      <div className="health-indicator">
-        <h4>Subscription Health:</h4>
-        <div className={`health-status ${
-          subscriptionStats.errors === 0 ? 'healthy' : 
-          subscriptionStats.errors < 5 ? 'warning' : 'critical'
-        }`}>
-          {subscriptionStats.errors === 0 ? 'Healthy' :
-           subscriptionStats.errors < 5 ? 'Warning' : 'Critical'}
-        </div>
-        
-        {subscriptionStats.updates > 0 && (
-          <p>Success Rate: {
-            ((subscriptionStats.updates / (subscriptionStats.updates + subscriptionStats.errors)) * 100).toFixed(1)
-          }%</p>
-        )}
-      </div>
+    <div>
+      <h3>Subscription Statistics</h3>
+      <p>Updates: {subscriptionStats.updates}</p>
+      <p>Errors: {subscriptionStats.errors}</p>
+      {subscriptionStats.lastError && (
+        <p>Last Error: {subscriptionStats.lastError}</p>
+      )}
     </div>
   );
 };
@@ -519,7 +439,7 @@ useGunOnNodeUpdated(
   },
   () => {
     // Basic cleanup
-  }
+  },
 );
 ```
 
@@ -530,21 +450,24 @@ useGunOnNodeUpdated(
 useGunOnNodeUpdated<UserData>(
   user,
   [appKeys, isLoggedIn], // Proper dependency array
-  useCallback((data: UserData, key?: string, msg?: any, ev?: any) => {
-    try {
-      // Type-safe update handling
-      if (data && isValidUserData(data)) {
-        handleUserUpdate(data);
+  useCallback(
+    (data: UserData, key?: string, msg?: any, ev?: any) => {
+      try {
+        // Type-safe update handling
+        if (data && isValidUserData(data)) {
+          handleUserUpdate(data);
+        }
+      } catch (error) {
+        console.error('Update processing error:', error);
       }
-    } catch (error) {
-      console.error('Update processing error:', error);
-    }
-  }, [handleUserUpdate]),
+    },
+    [handleUserUpdate],
+  ),
   useCallback(() => {
     // Comprehensive cleanup
     console.log('User subscription cleaned up');
     clearUserCache();
-  }, [clearUserCache])
+  }, [clearUserCache]),
 );
 ```
 

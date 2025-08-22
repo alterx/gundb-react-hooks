@@ -2,14 +2,18 @@
 
 A hook that handles user authentication using Gun key pairs with comprehensive error handling and status monitoring.
 
+## Overview
+
+`useGunKeyAuth` provides secure authentication functionality for GunDB applications. It manages the authentication process, handles errors gracefully, and provides real-time status updates for a complete authentication experience.
+
 ## API Reference
 
 ### Signature
 
 ```typescript
 useGunKeyAuth(
-  gun: GunRef, 
-  keys: KeyPair, 
+  gun: GunRef,
+  keys: KeyPair,
   triggerAuth?: boolean
 ): [IGunUserReference, boolean, GunError | null]
 ```
@@ -34,10 +38,10 @@ useGunKeyAuth(
 
 ```typescript
 interface KeyPair {
-  pub: string;    // Public key
-  priv: string;   // Private key
-  epub: string;   // Encrypted public key
-  epriv: string;  // Encrypted private key
+  pub: string; // Public key
+  priv: string; // Private key
+  epub: string; // Encrypted public key
+  epriv: string; // Encrypted private key
 }
 ```
 
@@ -125,7 +129,7 @@ export const ConditionalAuthApp: React.FC = () => {
   const [shouldAuth, setShouldAuth] = useState(false);
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
   const appKeys = useGunKeys(SEA);
-  
+
   // Only authenticate when user explicitly wants to
   const [user, isLoggedIn, authError] = useGunKeyAuth(gun, appKeys!, shouldAuth);
 
@@ -193,16 +197,16 @@ interface UserProfile {
 export const AuthWithRegistration: React.FC = () => {
   const [isNewUser, setIsNewUser] = useState(false);
   const [storedKeys, setStoredKeys] = useState<KeyPair | null>(null);
-  
+
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
-  
+
   // Generate new keys or use stored keys
   const keys = useGunKeys(SEA, storedKeys);
   const [user, isLoggedIn, authError] = useGunKeyAuth(gun, keys!);
 
   const handleCreateAccount = async () => {
     if (!keys) return;
-    
+
     try {
       // Store keys locally for future use (in real app, use secure storage)
       localStorage.setItem('gunKeys', JSON.stringify(keys));
@@ -253,22 +257,22 @@ export const AuthWithRegistration: React.FC = () => {
   );
 };
 
-const AuthenticatedApp: React.FC<{ 
-  user: any; 
-  keys: KeyPair; 
-  isNewUser: boolean; 
+const AuthenticatedApp: React.FC<{
+  user: any;
+  keys: KeyPair;
+  isNewUser: boolean;
 }> = ({ user, keys, isNewUser }) => {
-  const { 
-    fields: profile, 
+  const {
+    fields: profile,
     put: updateProfile,
-    error: profileError 
+    error: profileError
   } = useGunState<UserProfile>(user.get('profile'));
 
   const [username, setUsername] = useState('');
 
   const handleSetupProfile = async () => {
     if (!username.trim()) return;
-    
+
     try {
       await updateProfile({
         username,
@@ -320,7 +324,7 @@ const AuthenticatedApp: React.FC<{
 };
 ```
 
-## Error Handling Patterns
+## Error Handling
 
 ### Comprehensive Error Handling
 
@@ -328,7 +332,7 @@ const AuthenticatedApp: React.FC<{
 const AuthWithErrorHandling: React.FC = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [manualRetry, setManualRetry] = useState(false);
-  
+
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
   const keys = useGunKeys(SEA);
   const [user, isLoggedIn, authError] = useGunKeyAuth(gun, keys!, !manualRetry);
@@ -349,7 +353,7 @@ const AuthWithErrorHandling: React.FC = () => {
             </button>
           </div>
         );
-        
+
       case 'useGunKeyAuth':
         return (
           <div className="auth-error">
@@ -360,7 +364,7 @@ const AuthWithErrorHandling: React.FC = () => {
             </button>
           </div>
         );
-        
+
       default:
         return (
           <div className="unknown-error">
@@ -430,7 +434,7 @@ const storeKeysSecurely = async (keys: KeyPair) => {
   // - Encrypted local storage
   // - Hardware security modules
   // - Secure key management services
-  
+
   const encrypted = await SEA.encrypt(keys, userPassword);
   localStorage.setItem('encryptedKeys', encrypted);
 };
@@ -447,13 +451,13 @@ const validateKeys = (keys: KeyPair): boolean => {
 const SecureAuthFlow: React.FC = () => {
   const [authAttempts, setAuthAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
-  
+
   const [user, isLoggedIn, authError] = useGunKeyAuth(gun, keys!);
-  
+
   useEffect(() => {
     if (authError) {
       setAuthAttempts(prev => prev + 1);
-      
+
       // Lock after 3 failed attempts
       if (authAttempts >= 3) {
         setIsLocked(true);
@@ -461,11 +465,11 @@ const SecureAuthFlow: React.FC = () => {
       }
     }
   }, [authError, authAttempts]);
-  
+
   if (isLocked) {
     return <div>Too many failed attempts. Please wait 1 minute.</div>;
   }
-  
+
   // ... rest of component
 };
 ```

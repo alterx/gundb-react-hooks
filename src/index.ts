@@ -1,15 +1,34 @@
 // @ts-ignore
-import React, { useState, useEffect, useReducer, useRef, useMemo, useCallback, useContext, createContext } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useReducer,
+  useRef,
+  useMemo,
+  useCallback,
+  useContext,
+  createContext,
+} from 'react';
 
 // Enhanced TypeScript definitions
 export interface IGunChainReference<T = any> {
   get(key: string): IGunChainReference<T>;
-  put(data: T, callback?: (ack: { err?: string; ok?: any }) => void): IGunChainReference<T>;
-  on(callback: (data: T, key: string, message?: any, event?: any) => void): () => void;
+  put(
+    data: T,
+    callback?: (ack: { err?: string; ok?: any }) => void,
+  ): IGunChainReference<T>;
+  on(
+    callback: (data: T, key: string, message?: any, event?: any) => void,
+  ): () => void;
   once(callback: (data: T, key: string) => void): void;
-  set(data: T, callback?: (ack: { err?: string; ok?: any }) => void): IGunChainReference<T>;
+  set(
+    data: T,
+    callback?: (ack: { err?: string; ok?: any }) => void,
+  ): IGunChainReference<T>;
   map(): IGunChainReference<T>;
-  open?(callback: (data: T, key: string, message?: any, event?: any) => void): void;
+  open?(
+    callback: (data: T, key: string, message?: any, event?: any) => void,
+  ): void;
   user(soul?: string): IGunUserReference;
   off(): void;
   toString(): string;
@@ -76,8 +95,8 @@ export type Options = {
   useOpen?: boolean;
 };
 
-export type NodeData<T extends ValidGunData> = T & { 
-  readonly nodeID: string; 
+export type NodeData<T extends ValidGunData> = T & {
+  readonly nodeID: string;
   readonly _?: { '#': string; '>': Record<string, number> };
 };
 
@@ -142,10 +161,42 @@ export interface UseGunCollectionReturn<T> {
   count: number;
 }
 
+export interface PaginationOptions<T> {
+  pageSize?: number;
+  sortBy?: keyof T | ((a: NodeT<T>, b: NodeT<T>) => number);
+  sortOrder?: 'asc' | 'desc';
+  filter?: (item: NodeT<T>) => boolean;
+  preloadPages?: number;
+}
+
+export interface UsePaginatedCollectionReturn<T>
+  extends UseGunCollectionReturn<T> {
+  // Pagination state
+  currentPage: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+  pageSize: number;
+
+  // Pagination actions
+  nextPage: () => void;
+  prevPage: () => void;
+  goToPage: (page: number) => void;
+  setPageSize: (size: number) => void;
+
+  // Current page data
+  currentPageItems: NodeT<T>[];
+  currentPageCount: number;
+
+  // Optimizations
+  isLoadingPage: boolean;
+  preloadedPages: Set<number>;
+}
+
 export const encryptData = async (
   data: any,
   keys: undefined | string | KeyPair,
-  sea: any
+  sea: any,
 ) => {
   try {
     return keys && sea ? await sea.encrypt(data, keys) : data;
@@ -158,7 +209,7 @@ export const encryptData = async (
 export const decryptData = async (
   data: any,
   keys: undefined | string | KeyPair,
-  sea: any
+  sea: any,
 ) => {
   try {
     return keys && sea ? await sea.decrypt(data, keys) : data;
@@ -169,6 +220,20 @@ export const decryptData = async (
 };
 
 // Utility functions
+const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  wait: number,
+): ((...args: Parameters<T>) => void) => {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  return (...args: Parameters<T>) => {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
 const validateNodeID = (nodeID: string): void => {
   if (!nodeID || typeof nodeID !== 'string' || nodeID.trim().length === 0) {
     throw new Error('Invalid nodeID: must be a non-empty string');
@@ -191,7 +256,7 @@ const warnInDevelopment = (condition: boolean, message: string): void => {
 export const debouncedUpdates = (
   dispatcher: any,
   type = 'object',
-  timeout = 100
+  timeout = 100,
 ) => {
   let updates: any[] = [];
   let handler: any;
@@ -208,7 +273,7 @@ export const debouncedUpdates = (
             }
             return previousState;
           },
-          type === 'object' ? {} : new Map()
+          type === 'object' ? {} : new Map(),
         );
         dispatcher(newStateSlice);
         updates = [];
@@ -237,7 +302,7 @@ export const useIsMounted = () => {
 
 export const nodeReducer = <T>(
   state: NodeT<T>,
-  { data, type }: ActionType<T>
+  { data, type }: ActionType<T>,
 ): T => {
   switch (type) {
     case 'add':
@@ -252,7 +317,7 @@ export const nodeReducer = <T>(
 
 export const collectionReducer = <T>(
   state: CollectionState<T>,
-  { data, type }: ActionType<T>
+  { data, type }: ActionType<T>,
 ): CollectionState<T> => {
   switch (type) {
     case 'add':
@@ -288,11 +353,11 @@ export const collectionReducer = <T>(
 
 export const useSafeReducer = <T>(
   reducer: any,
-  initialState: T
+  initialState: T,
 ): [T, Function] => {
   const [state, dispatch] = useReducer<React.Reducer<T, ActionType<T>>>(
     reducer,
-    initialState
+    initialState,
   );
   const isMounted = useIsMounted();
 
@@ -319,7 +384,7 @@ export const useGun = (Gun: GunStatic, opts: GunOptions) => {
 
 export const useGunNamespace = (gun: GunRef, soul?: string) => {
   const [namespace, setNamespace] = useState(
-    soul ? gun.user(soul) : gun.user()
+    soul ? gun.user(soul) : gun.user(),
   );
   useEffect(() => {
     if (gun && !namespace) {
@@ -332,7 +397,7 @@ export const useGunNamespace = (gun: GunRef, soul?: string) => {
 export const useGunKeyAuth = (
   gun: GunRef,
   keys: KeyPair,
-  triggerAuth: boolean = true
+  triggerAuth: boolean = true,
 ) => {
   // Will attempt to perform a login (when triggerAuth is set to true),
   // or, if false, returns a namespaced gun node
@@ -342,7 +407,7 @@ export const useGunKeyAuth = (
 
   useEffect(() => {
     if (!gun) return;
-    
+
     // @ts-ignore - Gun types are not properly defined
     const cleanup = gun.on('auth', () => {
       setIsLoggedIn(true);
@@ -359,14 +424,14 @@ export const useGunKeyAuth = (
           if (ack.err) {
             setError({
               err: ack.err,
-              context: 'useGunKeyAuth.auth'
+              context: 'useGunKeyAuth.auth',
             });
           }
         });
       } catch (err) {
         setError({
           err: err instanceof Error ? err.message : 'Authentication failed',
-          context: 'useGunKeyAuth'
+          context: 'useGunKeyAuth',
         });
       }
     }
@@ -377,10 +442,10 @@ export const useGunKeyAuth = (
 
 export const useGunKeys = (
   sea: any,
-  existingKeys?: KeyPair | undefined | null
+  existingKeys?: KeyPair | undefined | null,
 ) => {
   const [newKeys, setNewKeys] = useState<KeyPair | undefined | null>(
-    existingKeys
+    existingKeys,
   );
 
   useEffect(() => {
@@ -409,7 +474,7 @@ export const useGunOnNodeUpdated = <T>(
     useOpen: false,
   },
   cb: (data: T, nodeID: string) => void,
-  cleanup?: () => void
+  cleanup?: () => void,
 ) => {
   const { appKeys, sea, useOpen } = opts;
   const handler = useRef<(() => void) | null>(null);
@@ -422,10 +487,10 @@ export const useGunOnNodeUpdated = <T>(
       encryptedField: any,
       nodeID: string,
       message: any,
-      event: any
+      event: any,
     ) => {
       if (!isMounted.current) return;
-      
+
       try {
         let decryptedField = await decryptData(encryptedField, appKeys, sea);
         cb(decryptedField, nodeID);
@@ -468,7 +533,7 @@ export const useGunState = <T>(
     sea: null,
     interval: 100,
     useOpen: false,
-  }
+  },
 ): UseGunStateReturn<T> => {
   const { appKeys, sea, interval = 100 } = opts;
   const [fields, dispatch] = useSafeReducer<T>(nodeReducer, {} as T);
@@ -482,22 +547,29 @@ export const useGunState = <T>(
   // Development warnings
   useEffect(() => {
     warnInDevelopment(!ref, 'useGunState: ref is undefined');
-    warnInDevelopment(!!(appKeys && !sea), 'useGunState: appKeys provided but no SEA instance');
+    warnInDevelopment(
+      !!(appKeys && !sea),
+      'useGunState: appKeys provided but no SEA instance',
+    );
   }, [ref, appKeys, sea]);
 
   // Memoized updater
-  const updater = useMemo(() => debouncedUpdates(
-    (data: any) => {
-      if (isMounted.current) {
-        dispatch({ type: 'add', data });
-        setIsLoading(false);
-        setIsConnected(true);
-        setError(null);
-      }
-    },
-    'object',
-    interval
-  ), [interval, isMounted]);
+  const updater = useMemo(
+    () =>
+      debouncedUpdates(
+        (data: any) => {
+          if (isMounted.current) {
+            dispatch({ type: 'add', data });
+            setIsLoading(false);
+            setIsConnected(true);
+            setError(null);
+          }
+        },
+        'object',
+        interval,
+      ),
+    [interval, isMounted],
+  );
 
   // Connection timeout
   useEffect(() => {
@@ -505,7 +577,7 @@ export const useGunState = <T>(
       if (isLoading) {
         setError({
           err: 'Connection timeout - no data received',
-          context: 'useGunState connection'
+          context: 'useGunState connection',
         });
         setIsLoading(false);
       }
@@ -528,7 +600,7 @@ export const useGunState = <T>(
       } catch (err) {
         setError({
           err: err instanceof Error ? err.message : 'Unknown error',
-          context: 'useGunState data processing'
+          context: 'useGunState data processing',
         });
       }
     },
@@ -538,81 +610,87 @@ export const useGunState = <T>(
         debouncedHandlers.current.forEach((c) => c());
         debouncedHandlers.current = [];
       }
-    }
+    },
   );
 
   // Enhanced put with validation and error handling
-  const put = useCallback(async (data: Partial<T>): Promise<void> => {
-    try {
-      validateData(data, 'useGunState.put');
-      setError(null);
-      
-      let encryptedData = await encryptData(data, appKeys, sea);
-      
-      await new Promise<void>((resolve, reject) =>
-        ref.put(encryptedData, (ack: any) => {
-          if (ack.err) {
-            const error: GunError = {
-              err: ack.err,
-              context: 'useGunState.put'
-            };
-            setError(error);
-            reject(error);
-          } else {
-            resolve();
-          }
-        })
-      );
-    } catch (err) {
-      const error: GunError = {
-        err: err instanceof Error ? err.message : 'Unknown error',
-        context: 'useGunState.put'
-      };
-      setError(error);
-      throw error;
-    }
-  }, [ref, appKeys, sea]);
+  const put = useCallback(
+    async (data: Partial<T>): Promise<void> => {
+      try {
+        validateData(data, 'useGunState.put');
+        setError(null);
+
+        let encryptedData = await encryptData(data, appKeys, sea);
+
+        await new Promise<void>((resolve, reject) =>
+          ref.put(encryptedData, (ack: any) => {
+            if (ack.err) {
+              const error: GunError = {
+                err: ack.err,
+                context: 'useGunState.put',
+              };
+              setError(error);
+              reject(error);
+            } else {
+              resolve();
+            }
+          }),
+        );
+      } catch (err) {
+        const error: GunError = {
+          err: err instanceof Error ? err.message : 'Unknown error',
+          context: 'useGunState.put',
+        };
+        setError(error);
+        throw error;
+      }
+    },
+    [ref, appKeys, sea],
+  );
 
   // Enhanced remove with validation
-  const remove = useCallback(async (field: string): Promise<void> => {
-    try {
-      validateNodeID(field);
-      setError(null);
-      
-      await new Promise<void>((resolve, reject) =>
-        ref.put(null, (ack: any) => {
-          if (ack.err) {
-            const error: GunError = {
-              err: ack.err,
-              context: 'useGunState.remove'
-            };
-            setError(error);
-            reject(error);
-          } else {
-            if (isMounted.current) {
-              dispatch({ type: 'remove', data: { nodeID: field } });
-            }
-            resolve();
-          }
-        })
-      );
-    } catch (err) {
-      const error: GunError = {
-        err: err instanceof Error ? err.message : 'Unknown error',
-        context: 'useGunState.remove'
-      };
-      setError(error);
-      throw error;
-    }
-  }, [ref, isMounted]);
+  const remove = useCallback(
+    async (field: string): Promise<void> => {
+      try {
+        validateNodeID(field);
+        setError(null);
 
-  return { 
-    fields, 
-    put, 
-    remove, 
-    error, 
-    isLoading, 
-    isConnected 
+        await new Promise<void>((resolve, reject) =>
+          ref.put(null, (ack: any) => {
+            if (ack.err) {
+              const error: GunError = {
+                err: ack.err,
+                context: 'useGunState.remove',
+              };
+              setError(error);
+              reject(error);
+            } else {
+              if (isMounted.current) {
+                dispatch({ type: 'remove', data: { nodeID: field } });
+              }
+              resolve();
+            }
+          }),
+        );
+      } catch (err) {
+        const error: GunError = {
+          err: err instanceof Error ? err.message : 'Unknown error',
+          context: 'useGunState.remove',
+        };
+        setError(error);
+        throw error;
+      }
+    },
+    [ref, isMounted],
+  );
+
+  return {
+    fields,
+    put,
+    remove,
+    error,
+    isLoading,
+    isConnected,
   };
 };
 
@@ -623,14 +701,14 @@ export const useGunCollectionState = <T extends Record<string, any>>(
     sea: null,
     interval: 100,
     useOpen: false,
-  }
+  },
 ): UseGunCollectionReturn<T> => {
   const { appKeys, sea, interval = 100 } = opts;
   const [{ collection }, dispatch] = useSafeReducer<CollectionState<NodeT<T>>>(
     collectionReducer,
     {
       collection: new Map(),
-    }
+    },
   );
 
   const [error, setError] = useState<GunError | null>(null);
@@ -641,21 +719,28 @@ export const useGunCollectionState = <T extends Record<string, any>>(
   // Development warnings
   useEffect(() => {
     warnInDevelopment(!ref, 'useGunCollectionState: ref is undefined');
-    warnInDevelopment(!!(appKeys && !sea), 'useGunCollectionState: appKeys provided but no SEA instance');
+    warnInDevelopment(
+      !!(appKeys && !sea),
+      'useGunCollectionState: appKeys provided but no SEA instance',
+    );
   }, [ref, appKeys, sea]);
 
   // Memoized updater
-  const updater = useMemo(() => debouncedUpdates(
-    (data: NodeT<T>) => {
-      if (isMounted.current) {
-        dispatch({ type: 'add', data });
-        setIsLoading(false);
-        setError(null);
-      }
-    },
-    'map',
-    interval
-  ), [interval, isMounted]);
+  const updater = useMemo(
+    () =>
+      debouncedUpdates(
+        (data: NodeT<T>) => {
+          if (isMounted.current) {
+            dispatch({ type: 'add', data });
+            setIsLoading(false);
+            setError(null);
+          }
+        },
+        'map',
+        interval,
+      ),
+    [interval, isMounted],
+  );
 
   // Connection timeout
   useEffect(() => {
@@ -663,7 +748,7 @@ export const useGunCollectionState = <T extends Record<string, any>>(
       if (isLoading) {
         setError({
           err: 'Connection timeout - no data received',
-          context: 'useGunCollectionState connection'
+          context: 'useGunCollectionState connection',
         });
         setIsLoading(false);
       }
@@ -687,7 +772,7 @@ export const useGunCollectionState = <T extends Record<string, any>>(
         } catch (err) {
           setError({
             err: err instanceof Error ? err.message : 'Unknown error',
-            context: 'useGunCollectionState data processing'
+            context: 'useGunCollectionState data processing',
           });
         }
       }
@@ -698,90 +783,98 @@ export const useGunCollectionState = <T extends Record<string, any>>(
         debouncedHandlers.current.forEach((c) => c());
         debouncedHandlers.current = [];
       }
-    }
+    },
   );
 
   // Working with Sets - Enhanced CRUD operations
 
-  const updateInSet = useCallback(async (nodeID: string, data: Partial<T>): Promise<void> => {
-    try {
-      validateNodeID(nodeID);
-      validateData(data, 'useGunCollectionState.updateInSet');
-      setError(null);
-      
-      let encryptedData = await encryptData(data, appKeys, sea);
-      await new Promise<void>((resolve, reject) =>
-        ref
-          .get(nodeID)
-          .put(encryptedData, (ack: any) => {
+  const updateInSet = useCallback(
+    async (nodeID: string, data: Partial<T>): Promise<void> => {
+      try {
+        validateNodeID(nodeID);
+        validateData(data, 'useGunCollectionState.updateInSet');
+        setError(null);
+
+        let encryptedData = await encryptData(data, appKeys, sea);
+        await new Promise<void>((resolve, reject) =>
+          ref.get(nodeID).put(encryptedData, (ack: any) => {
             if (ack.err) {
               const error: GunError = {
                 err: ack.err,
-                context: 'useGunCollectionState.updateInSet'
+                context: 'useGunCollectionState.updateInSet',
               };
               setError(error);
               reject(error);
             } else {
               if (isMounted.current) {
-                dispatch({ type: 'update', data: { nodeID, ...data } as NodeT<T> });
+                dispatch({
+                  type: 'update',
+                  data: { nodeID, ...data } as NodeT<T>,
+                });
               }
               resolve();
             }
-          })
-      );
-    } catch (err) {
-      const error: GunError = {
-        err: err instanceof Error ? err.message : 'Unknown error',
-        context: 'useGunCollectionState.updateInSet'
-      };
-      setError(error);
-      throw error;
-    }
-  }, [ref, appKeys, sea, isMounted]);
+          }),
+        );
+      } catch (err) {
+        const error: GunError = {
+          err: err instanceof Error ? err.message : 'Unknown error',
+          context: 'useGunCollectionState.updateInSet',
+        };
+        setError(error);
+        throw error;
+      }
+    },
+    [ref, appKeys, sea, isMounted],
+  );
 
-  const addToSet = useCallback(async (data: T, nodeID?: string): Promise<void> => {
-    try {
-      validateData(data, 'useGunCollectionState.addToSet');
-      setError(null);
-      
-      let encryptedData = await encryptData(data, appKeys, sea);
-      
-      const promise = nodeID 
-        ? new Promise<void>((resolve, reject) =>
-            ref.get(nodeID).put(encryptedData, (ack: any) =>
-              ack.err ? reject(new Error(ack.err)) : resolve()
-            )
-          )
-        : new Promise<void>((resolve, reject) =>
-            ref.set(encryptedData, (ack: any) =>
-              ack.err ? reject(new Error(ack.err)) : resolve()
-            )
-          );
-          
-      await promise;
-    } catch (err) {
-      const error: GunError = {
-        err: err instanceof Error ? err.message : 'Unknown error',
-        context: 'useGunCollectionState.addToSet'
-      };
-      setError(error);
-      throw error;
-    }
-  }, [ref, appKeys, sea]);
+  const addToSet = useCallback(
+    async (data: T, nodeID?: string): Promise<void> => {
+      try {
+        validateData(data, 'useGunCollectionState.addToSet');
+        setError(null);
 
-  const removeFromSet = useCallback(async (nodeID: string): Promise<void> => {
-    try {
-      validateNodeID(nodeID);
-      setError(null);
-      
-      await new Promise<void>((resolve, reject) =>
-        ref
-          .get(nodeID)
-          .put(null, (ack: any) => {
+        let encryptedData = await encryptData(data, appKeys, sea);
+
+        const promise = nodeID
+          ? new Promise<void>((resolve, reject) =>
+              ref
+                .get(nodeID)
+                .put(encryptedData, (ack: any) =>
+                  ack.err ? reject(new Error(ack.err)) : resolve(),
+                ),
+            )
+          : new Promise<void>((resolve, reject) =>
+              ref.set(encryptedData, (ack: any) =>
+                ack.err ? reject(new Error(ack.err)) : resolve(),
+              ),
+            );
+
+        await promise;
+      } catch (err) {
+        const error: GunError = {
+          err: err instanceof Error ? err.message : 'Unknown error',
+          context: 'useGunCollectionState.addToSet',
+        };
+        setError(error);
+        throw error;
+      }
+    },
+    [ref, appKeys, sea],
+  );
+
+  const removeFromSet = useCallback(
+    async (nodeID: string): Promise<void> => {
+      try {
+        validateNodeID(nodeID);
+        setError(null);
+
+        await new Promise<void>((resolve, reject) =>
+          ref.get(nodeID).put(null, (ack: any) => {
             if (ack.err) {
               const error: GunError = {
                 err: ack.err,
-                context: 'useGunCollectionState.removeFromSet'
+                context: 'useGunCollectionState.removeFromSet',
               };
               setError(error);
               reject(error);
@@ -791,35 +884,299 @@ export const useGunCollectionState = <T extends Record<string, any>>(
               }
               resolve();
             }
-          })
-      );
-    } catch (err) {
-      const error: GunError = {
-        err: err instanceof Error ? err.message : 'Unknown error',
-        context: 'useGunCollectionState.removeFromSet'
-      };
-      setError(error);
-      throw error;
-    }
-  }, [ref, isMounted]);
+          }),
+        );
+      } catch (err) {
+        const error: GunError = {
+          err: err instanceof Error ? err.message : 'Unknown error',
+          context: 'useGunCollectionState.removeFromSet',
+        };
+        setError(error);
+        throw error;
+      }
+    },
+    [ref, isMounted],
+  );
 
   // Convert Map to Array for easier consumption
-  const items = useMemo(() => 
-    collection ? Array.from(collection.values()) : [], 
-    [collection]
+  const items = useMemo(
+    () => (collection ? Array.from(collection.values()) : []),
+    [collection],
   );
 
   const count = useMemo(() => collection?.size || 0, [collection]);
 
-  return { 
-    collection, 
+  return {
+    collection,
     items, // More convenient array access
-    addToSet, 
-    updateInSet, 
+    addToSet,
+    updateInSet,
     removeFromSet,
     error,
     isLoading,
-    count
+    count,
+  };
+};
+
+// Paginated Collection Hook with Optimizations
+export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
+  ref: GunRef,
+  paginationOpts: PaginationOptions<T> = {},
+  opts: Options = {
+    appKeys: '',
+    sea: null,
+    interval: 100,
+    useOpen: false,
+  },
+): UsePaginatedCollectionReturn<T> => {
+  const {
+    pageSize = 20,
+    sortBy,
+    sortOrder = 'asc',
+    filter,
+    preloadPages = 1,
+  } = paginationOpts;
+
+  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPageItems, setCurrentPageItems] = useState<NodeT<T>[]>([]);
+  const [isLoadingPage, setIsLoadingPage] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
+
+  // Cache for pages
+  const pageCache = useRef<Map<number, NodeT<T>[]>>(new Map());
+  const cacheTimestamps = useRef<Map<number, number>>(new Map());
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // Use original hook for basic collection management
+  const baseCollection = useGunCollectionState<T>(ref, opts);
+
+  // Cache utilities
+  const getCachedPage = useCallback((page: number): NodeT<T>[] | null => {
+    const cached = pageCache.current.get(page);
+    const timestamp = cacheTimestamps.current.get(page);
+
+    if (cached && timestamp && Date.now() - timestamp < CACHE_TTL) {
+      return cached;
+    }
+    return null;
+  }, []);
+
+  const setCachedPage = useCallback((page: number, items: NodeT<T>[]) => {
+    pageCache.current.set(page, items);
+    cacheTimestamps.current.set(page, Date.now());
+  }, []);
+
+  // Process and sort all items
+  const processedItems = useMemo(() => {
+    const allItems = Array.from(baseCollection.collection?.values() || []);
+
+    // Apply filtering
+    let filteredItems = filter ? allItems.filter(filter) : allItems;
+
+    // Apply sorting
+    if (sortBy) {
+      filteredItems = [...filteredItems].sort((a, b) => {
+        if (typeof sortBy === 'function') {
+          return sortOrder === 'asc' ? sortBy(a, b) : sortBy(b, a);
+        }
+        const aVal = a[sortBy];
+        const bVal = b[sortBy];
+        let comparison = 0;
+        if (aVal < bVal) comparison = -1;
+        else if (aVal > bVal) comparison = 1;
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return filteredItems;
+  }, [baseCollection.collection, filter, sortBy, sortOrder]);
+
+  // Update total items when processed items change
+  useEffect(() => {
+    setTotalItems(processedItems.length);
+    // Clear cache when data changes significantly
+    pageCache.current.clear();
+    cacheTimestamps.current.clear();
+  }, [processedItems]);
+
+  // Load specific page
+  const loadPage = useCallback(
+    async (page: number) => {
+      if (page < 0) return;
+
+      setIsLoadingPage(true);
+
+      try {
+        // Check cache first
+        const cached = getCachedPage(page);
+        if (cached) {
+          setCurrentPageItems(cached);
+          setIsLoadingPage(false);
+          return;
+        }
+
+        // Extract page from processed items
+        const startIndex = page * pageSize;
+        const endIndex = startIndex + pageSize;
+        const pageItems = processedItems.slice(startIndex, endIndex);
+
+        // Cache the page
+        setCachedPage(page, pageItems);
+        setCurrentPageItems(pageItems);
+
+        // Preload adjacent pages
+        for (let i = 1; i <= preloadPages; i++) {
+          const nextPage = page + i;
+          const prevPage = page - i;
+
+          setTimeout(() => {
+            if (
+              nextPage * pageSize < processedItems.length &&
+              !getCachedPage(nextPage)
+            ) {
+              const nextStartIndex = nextPage * pageSize;
+              const nextEndIndex = nextStartIndex + pageSize;
+              const nextPageItems = processedItems.slice(
+                nextStartIndex,
+                nextEndIndex,
+              );
+              setCachedPage(nextPage, nextPageItems);
+            }
+          }, 50 * i);
+
+          setTimeout(() => {
+            if (prevPage >= 0 && !getCachedPage(prevPage)) {
+              const prevStartIndex = prevPage * pageSize;
+              const prevEndIndex = prevStartIndex + pageSize;
+              const prevPageItems = processedItems.slice(
+                prevStartIndex,
+                prevEndIndex,
+              );
+              setCachedPage(prevPage, prevPageItems);
+            }
+          }, 50 * i);
+        }
+      } catch (error) {
+        console.error('Failed to load page:', error);
+      } finally {
+        setIsLoadingPage(false);
+      }
+    },
+    [pageSize, processedItems, preloadPages, getCachedPage, setCachedPage],
+  );
+
+  // Pagination calculations
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const hasNextPage = currentPage < totalPages - 1;
+  const hasPrevPage = currentPage > 0;
+
+  // Pagination controls
+  const nextPage = useCallback(() => {
+    if (hasNextPage) {
+      const newPage = currentPage + 1;
+      setCurrentPage(newPage);
+      loadPage(newPage);
+    }
+  }, [currentPage, hasNextPage, loadPage]);
+
+  const prevPage = useCallback(() => {
+    if (hasPrevPage) {
+      const newPage = currentPage - 1;
+      setCurrentPage(newPage);
+      loadPage(newPage);
+    }
+  }, [currentPage, hasPrevPage, loadPage]);
+
+  const goToPage = useCallback(
+    (page: number) => {
+      if (page >= 0 && page < totalPages) {
+        setCurrentPage(page);
+        loadPage(page);
+      }
+    },
+    [totalPages, loadPage],
+  );
+
+  const setNewPageSize = useCallback(
+    (size: number) => {
+      if (size <= 0) return;
+
+      // Calculate which item we're currently viewing
+      const currentItemIndex = currentPage * pageSize;
+      // Calculate new page number to maintain position
+      const newPage = Math.floor(currentItemIndex / size);
+
+      setCurrentPage(newPage);
+      pageCache.current.clear(); // Clear cache since page size changed
+      cacheTimestamps.current.clear();
+      loadPage(newPage);
+    },
+    [currentPage, pageSize, loadPage],
+  );
+
+  // Load current page when page changes or data updates
+  useEffect(() => {
+    if (totalPages > 0) {
+      // Ensure current page is valid
+      if (currentPage >= totalPages) {
+        const newPage = Math.max(0, totalPages - 1);
+        setCurrentPage(newPage);
+        loadPage(newPage);
+      } else {
+        loadPage(currentPage);
+      }
+    }
+  }, [currentPage, totalPages, loadPage]);
+
+  // Real-time updates - update cache when base collection changes
+  const updatePageCache = useMemo(
+    () =>
+      debounce((updatedItem: NodeT<T>) => {
+        // Only update pages that might contain this item
+        pageCache.current.forEach((page, pageNum) => {
+          const itemIndex = page.findIndex(
+            (item) => item.nodeID === updatedItem.nodeID,
+          );
+          if (itemIndex !== -1) {
+            page[itemIndex] = updatedItem;
+            // Trigger re-render only for current page
+            if (pageNum === currentPage) {
+              setCurrentPageItems([...page]);
+            }
+          }
+        });
+      }, 100),
+    [currentPage],
+  );
+
+  // Watch for changes in base collection to update cache
+  useEffect(() => {
+    if (baseCollection.collection) {
+      Array.from(baseCollection.collection.values()).forEach((item) => {
+        updatePageCache(item);
+      });
+    }
+  }, [baseCollection.collection, updatePageCache]);
+
+  return {
+    ...baseCollection,
+    // Pagination state
+    currentPage,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+    pageSize,
+    // Pagination actions
+    nextPage,
+    prevPage,
+    goToPage,
+    setPageSize: setNewPageSize,
+    // Current page data
+    currentPageItems,
+    currentPageCount: currentPageItems.length,
+    // Optimizations
+    isLoadingPage,
+    preloadedPages: new Set(Array.from(pageCache.current.keys())),
   };
 };
 
@@ -854,7 +1211,7 @@ export const AuthProvider: React.FC<AuthProviderOpts> = ({
   const [user, isLoggedIn] = useGunKeyAuth(
     gun,
     existingKeys || undefined,
-    isReadyToAuth === 'ready'
+    isReadyToAuth === 'ready',
   );
 
   useEffect(() => {
@@ -899,7 +1256,7 @@ export const AuthProvider: React.FC<AuthProviderOpts> = ({
         keyStatus: 'new',
       });
     },
-    [setStatuses, newKeys]
+    [setStatuses, newKeys],
   );
 
   const logout = useCallback(
@@ -924,39 +1281,41 @@ export const AuthProvider: React.FC<AuthProviderOpts> = ({
       };
       removeKeys();
     },
-    [keyFieldName, storage, user]
+    [keyFieldName, storage, user],
   );
 
-  const newGunInstance = useCallback((opts: GunOptions = gunOpts) => {
-    return Gun(opts);
-  }, [Gun, gunOpts]);
-
-  const value = useMemo<AuthContextType>(() => ({
-    gun,
-    user,
-    login,
-    logout,
-    sea,
-    appKeys: existingKeys || newKeys,
-    isLoggedIn,
-    newGunInstance,
-  }), [
-    gun,
-    user,
-    login,
-    logout,
-    sea,
-    newKeys,
-    existingKeys,
-    isLoggedIn,
-    newGunInstance,
-  ]);
-
-  return React.createElement(
-    AuthContext.Provider,
-    { value },
-    children
+  const newGunInstance = useCallback(
+    (opts: GunOptions = gunOpts) => {
+      return Gun(opts);
+    },
+    [Gun, gunOpts],
   );
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      gun,
+      user,
+      login,
+      logout,
+      sea,
+      appKeys: existingKeys || newKeys,
+      isLoggedIn,
+      newGunInstance,
+    }),
+    [
+      gun,
+      user,
+      login,
+      logout,
+      sea,
+      newKeys,
+      existingKeys,
+      isLoggedIn,
+      newGunInstance,
+    ],
+  );
+
+  return React.createElement(AuthContext.Provider, { value }, children);
 };
 
 export const useAuth = (): AuthContextType => {
@@ -983,11 +1342,11 @@ export const GunProvider: React.FC<{
       return null;
     }
   }, [gun, JSON.stringify(options)]);
-  
+
   return React.createElement(
     GunContext.Provider,
     { value: gunInstance },
-    children
+    children,
   );
 };
 
@@ -1001,29 +1360,31 @@ export const useGunContext = (): IGunChainReference => {
 
 // Debug utility hook
 export const useGunDebug = (
-  ref: IGunChainReference, 
+  ref: IGunChainReference,
   label: string,
-  enabled: boolean = true
+  enabled: boolean = true,
 ): void => {
   useEffect(() => {
     if (!enabled || !ref) return;
-    
+
     console.log(`[GunDB Debug - ${label}] Listening to:`, ref);
-    
+
     const cleanup = ref.on((data, key) => {
-      console.log(`[${label}] Update:`, { 
-        key, 
-        data, 
-        timestamp: new Date().toISOString() 
+      console.log(`[${label}] Update:`, {
+        key,
+        data,
+        timestamp: new Date().toISOString(),
       });
     });
-    
+
     return cleanup;
   }, [ref, label, enabled]);
 };
 
 // Connection status hook
-export const useGunConnection = (ref: IGunChainReference): {
+export const useGunConnection = (
+  ref: IGunChainReference,
+): {
   isConnected: boolean;
   lastSeen: Date | null;
   error: GunError | null;
@@ -1043,7 +1404,7 @@ export const useGunConnection = (ref: IGunChainReference): {
         setIsConnected(false);
         setError({
           err: 'Connection timeout',
-          context: 'useGunConnection'
+          context: 'useGunConnection',
         });
       }, 10000); // 10 second timeout
     };

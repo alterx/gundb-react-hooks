@@ -1,6 +1,10 @@
 # useGunKeys
 
-A hook that creates or retrieves SEA key pairs for Gun authentication with secure generation and error handling.
+A hook for creating or retrieving SEA key pairs for Gun authentication with secure generation and comprehensive error handling.
+
+## Overview
+
+`useGunKeys` handles the creation and management of cryptographic key pairs required for GunDB authentication. It provides secure key generation using SEA (Security, Encryption, Authorization) and supports both new key creation and existing key usage.
 
 ## API Reference
 
@@ -8,7 +12,7 @@ A hook that creates or retrieves SEA key pairs for Gun authentication with secur
 
 ```typescript
 useGunKeys(
-  SEA: any, 
+  SEA: any,
   initialValue?: KeyPair | null
 ): KeyPair | null
 ```
@@ -21,17 +25,17 @@ useGunKeys(
 ### Return Type
 
 ```typescript
-KeyPair | null  // Returns null while generating, KeyPair when ready
+KeyPair | null; // Returns null while generating, KeyPair when ready
 ```
 
 ### Key Pair Interface
 
 ```typescript
 interface KeyPair {
-  pub: string;    // Public key
-  priv: string;   // Private key  
-  epub: string;   // Encrypted public key
-  epriv: string;  // Encrypted private key
+  pub: string; // Public key
+  priv: string; // Private key
+  epub: string; // Encrypted public key
+  epriv: string; // Encrypted private key
 }
 ```
 
@@ -78,7 +82,7 @@ import SEA from 'gun/sea';
 
 export const ExistingKeysExample: React.FC = () => {
   const [storedKeys, setStoredKeys] = useState<KeyPair | null>(null);
-  
+
   // Load keys from secure storage on mount
   useEffect(() => {
     const loadKeys = async () => {
@@ -92,7 +96,7 @@ export const ExistingKeysExample: React.FC = () => {
         console.error('Failed to load stored keys:', error);
       }
     };
-    
+
     loadKeys();
   }, []);
 
@@ -128,7 +132,7 @@ export const ExistingKeysExample: React.FC = () => {
   return (
     <div className="key-management">
       <h3>Key Management</h3>
-      
+
       <div className="key-details">
         <h4>Key Information</h4>
         <p><strong>Public Key:</strong> {keys.pub}</p>
@@ -142,7 +146,7 @@ export const ExistingKeysExample: React.FC = () => {
             Save Keys for Later Use
           </button>
         )}
-        
+
         {storedKeys && (
           <button onClick={handleClearKeys} className="clear-keys">
             Generate New Keys
@@ -176,7 +180,7 @@ import SEA from 'gun/sea';
 export const KeyGenerationProgress: React.FC = () => {
   const [startTime, setStartTime] = useState<number>(0);
   const [elapsed, setElapsed] = useState<number>(0);
-  
+
   const keys = useGunKeys(SEA);
 
   useEffect(() => {
@@ -185,7 +189,7 @@ export const KeyGenerationProgress: React.FC = () => {
       const interval = setInterval(() => {
         setElapsed(Date.now() - startTime);
       }, 100);
-      
+
       return () => clearInterval(interval);
     }
   }, [keys, startTime]);
@@ -198,8 +202,8 @@ export const KeyGenerationProgress: React.FC = () => {
           <p>Time elapsed: {(elapsed / 1000).toFixed(1)}s</p>
           <p>Creating secure key pair...</p>
           <div className="progress-bar">
-            <div className="progress-fill" style={{ 
-              width: `${Math.min((elapsed / 3000) * 100, 95)}%` 
+            <div className="progress-fill" style={{
+              width: `${Math.min((elapsed / 3000) * 100, 95)}%`
             }} />
           </div>
         </div>
@@ -239,13 +243,13 @@ export const KeyImportExport: React.FC = () => {
   const [importKeys, setImportKeys] = useState<KeyPair | null>(null);
   const [importText, setImportText] = useState<string>('');
   const [exportFormat, setExportFormat] = useState<'json' | 'base64'>('json');
-  
+
   const keys = useGunKeys(SEA, importKeys);
 
   const handleImport = () => {
     try {
       let parsed: KeyPair;
-      
+
       if (importText.startsWith('{')) {
         // JSON format
         parsed = JSON.parse(importText);
@@ -254,12 +258,12 @@ export const KeyImportExport: React.FC = () => {
         const decoded = atob(importText);
         parsed = JSON.parse(decoded);
       }
-      
+
       // Validate key structure
       if (!parsed.pub || !parsed.priv || !parsed.epub || !parsed.epriv) {
         throw new Error('Invalid key format');
       }
-      
+
       setImportKeys(parsed);
       setImportText('');
     } catch (error) {
@@ -269,16 +273,16 @@ export const KeyImportExport: React.FC = () => {
 
   const handleExport = () => {
     if (!keys) return;
-    
+
     try {
       let exported: string;
-      
+
       if (exportFormat === 'json') {
         exported = JSON.stringify(keys, null, 2);
       } else {
         exported = btoa(JSON.stringify(keys));
       }
-      
+
       navigator.clipboard.writeText(exported);
       alert(`Keys exported to clipboard in ${exportFormat} format!`);
     } catch (error) {
@@ -304,7 +308,7 @@ export const KeyImportExport: React.FC = () => {
   return (
     <div className="key-import-export">
       <h3>Key Management</h3>
-      
+
       <div className="current-keys">
         <h4>Current Keys</h4>
         <p><strong>Public Key:</strong> {keys.pub.slice(0, 20)}...</p>
@@ -315,18 +319,18 @@ export const KeyImportExport: React.FC = () => {
         <h4>Export Keys</h4>
         <div className="export-options">
           <label>
-            <input 
-              type="radio" 
-              value="json" 
+            <input
+              type="radio"
+              value="json"
               checked={exportFormat === 'json'}
               onChange={(e) => setExportFormat(e.target.value as 'json')}
             />
             JSON Format (Human Readable)
           </label>
           <label>
-            <input 
-              type="radio" 
-              value="base64" 
+            <input
+              type="radio"
+              value="base64"
               checked={exportFormat === 'base64'}
               onChange={(e) => setExportFormat(e.target.value as 'base64')}
             />
@@ -371,7 +375,57 @@ export const KeyImportExport: React.FC = () => {
 };
 ```
 
-## Integration Patterns
+## Error Handling
+
+### Comprehensive Error Management
+
+```typescript
+function KeyGenerationWithErrorHandling() {
+  const [error, setError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const keys = useGunKeys(SEA);
+
+  useEffect(() => {
+    if (!keys) {
+      setIsGenerating(true);
+      setError(null);
+    } else {
+      setIsGenerating(false);
+    }
+  }, [keys]);
+
+  if (error) {
+    return (
+      <div className="key-error">
+        <h3>Key Generation Failed</h3>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()}>
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="key-generating">
+        <h3>Generating Secure Keys</h3>
+        <p>This may take a few seconds...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="keys-ready">
+      <h3>Keys Ready</h3>
+      <p>Your cryptographic keys have been generated successfully.</p>
+    </div>
+  );
+}
+```
+
+## Migration from v0.9.x
 
 ### With Authentication Flow
 
@@ -383,7 +437,7 @@ import SEA from 'gun/sea';
 
 export const CompleteAuthFlow: React.FC = () => {
   const [authStep, setAuthStep] = useState<'keys' | 'auth' | 'ready'>('keys');
-  
+
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
   const keys = useGunKeys(SEA);
   const [user, isLoggedIn, authError] = useGunKeyAuth(gun, keys!, false);

@@ -14,23 +14,23 @@ useGunCollectionState<T>(ref: GunRef, opts?: Options): UseGunCollectionReturn<T>
 
 ```typescript
 interface UseGunCollectionReturn<T> {
-  collection: Map<string, NodeT<T>> | undefined;      // Raw Map collection
-  items: NodeT<T>[];                                  // Array for easy iteration (NEW)
-  addToSet: (data: T, nodeID?: string) => Promise<void>;     // Add item
+  collection: Map<string, NodeT<T>> | undefined; // Raw Map collection
+  items: NodeT<T>[]; // Array for easy iteration
+  addToSet: (data: T, nodeID?: string) => Promise<void>; // Add item
   updateInSet: (nodeID: string, data: Partial<T>) => Promise<void>; // Update item
-  removeFromSet: (nodeID: string) => Promise<void>;          // Remove item
-  error: GunError | null;                             // Error state (NEW)
-  isLoading: boolean;                                 // Loading state (NEW)
-  count: number;                                      // Item count (NEW)
+  removeFromSet: (nodeID: string) => Promise<void>; // Remove item
+  error: GunError | null; // Error state
+  isLoading: boolean; // Loading state
+  count: number; // Item count
 }
 ```
 
 ### Data Type
 
 ```typescript
-type NodeT<T> = T & { 
-  nodeID: string;    // Unique identifier for each item
-  [key: string]: any; 
+type NodeT<T> = T & {
+  nodeID: string; // Unique identifier for each item
+  [key: string]: any;
 };
 ```
 
@@ -51,8 +51,8 @@ interface TodoItem {
 
 export const TodoApp: React.FC = () => {
   const gun = useGun(Gun, { peers: ['http://localhost:8765/gun'] });
-  
-  const { 
+
+  const {
     items: todos,
     addToSet: addTodo,
     updateInSet: updateTodo,
@@ -93,8 +93,8 @@ export const TodoApp: React.FC = () => {
 
   const handleToggleTodo = async (todo: NodeT<TodoItem>) => {
     try {
-      await updateTodo(todo.nodeID, { 
-        completed: !todo.completed 
+      await updateTodo(todo.nodeID, {
+        completed: !todo.completed
       });
     } catch (error) {
       console.error('Failed to toggle todo:', error);
@@ -112,17 +112,17 @@ export const TodoApp: React.FC = () => {
   return (
     <div>
       <h1>Todo List ({count} items)</h1>
-      
+
       <button onClick={handleAddTodo} className="add-button">
         Add Todo
       </button>
-      
+
       <ul className="todo-list">
         {todos.map(todo => (
           <li key={todo.nodeID} className={todo.completed ? 'completed' : ''}>
-            <span 
+            <span
               onClick={() => handleToggleTodo(todo)}
-              style={{ 
+              style={{
                 textDecoration: todo.completed ? 'line-through' : 'none',
                 cursor: 'pointer'
               }}
@@ -136,7 +136,7 @@ export const TodoApp: React.FC = () => {
           </li>
         ))}
       </ul>
-      
+
       {todos.length === 0 && (
         <p>No todos yet. Add one above!</p>
       )}
@@ -151,11 +151,11 @@ export const TodoApp: React.FC = () => {
 
 ```typescript
 import React, { useState } from 'react';
-import { 
-  useGun, 
-  useGunCollectionState, 
-  useGunKeyAuth, 
-  useGunKeys 
+import {
+  useGun,
+  useGunCollectionState,
+  useGunKeyAuth,
+  useGunKeys
 } from '@altrx/gundb-react-hooks';
 import Gun from 'gun';
 import SEA from 'gun/sea';
@@ -185,8 +185,8 @@ export const ChatApp: React.FC = () => {
 
 const ChatRoom: React.FC<{ user: any; appKeys: any }> = ({ user, appKeys }) => {
   const [messageText, setMessageText] = useState('');
-  
-  const { 
+
+  const {
     items: messages,
     addToSet: sendMessage,
     error,
@@ -199,7 +199,7 @@ const ChatRoom: React.FC<{ user: any; appKeys: any }> = ({ user, appKeys }) => {
 
   const handleSendMessage = async () => {
     if (!messageText.trim()) return;
-    
+
     try {
       await sendMessage({
         text: messageText,
@@ -217,14 +217,14 @@ const ChatRoom: React.FC<{ user: any; appKeys: any }> = ({ user, appKeys }) => {
   if (error) return <div>Chat Error: {error.err}</div>;
 
   // Sort messages by timestamp
-  const sortedMessages = messages.sort((a, b) => 
+  const sortedMessages = messages.sort((a, b) =>
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
   return (
     <div className="chat-room">
-      <h2>🔐 Encrypted Chat Room ({count} messages)</h2>
-      
+      <h2>Encrypted Chat Room ({count} messages)</h2>
+
       <div className="messages">
         {sortedMessages.map(message => (
           <div key={message.nodeID} className="message">
@@ -234,7 +234,7 @@ const ChatRoom: React.FC<{ user: any; appKeys: any }> = ({ user, appKeys }) => {
           </div>
         ))}
       </div>
-      
+
       <div className="message-input">
         <input
           type="text"
@@ -266,8 +266,8 @@ interface CartItem {
 
 export const ShoppingCart: React.FC = () => {
   const gun = useGunContext();
-  
-  const { 
+
+  const {
     items: cartItems,
     addToSet: addToCart,
     updateInSet: updateCartItem,
@@ -278,7 +278,7 @@ export const ShoppingCart: React.FC = () => {
   } = useGunCollectionState<CartItem>(gun.get('user').get('cart'));
 
   // Calculate total price
-  const totalPrice = cartItems.reduce((total, item) => 
+  const totalPrice = cartItems.reduce((total, item) =>
     total + (item.price * item.quantity), 0
   );
 
@@ -310,8 +310,8 @@ export const ShoppingCart: React.FC = () => {
 
   return (
     <div className="shopping-cart">
-      <h2>🛒 Shopping Cart ({count} items)</h2>
-      
+      <h2>Shopping Cart ({count} items)</h2>
+
       {cartItems.length === 0 ? (
         <p>Your cart is empty</p>
       ) : (
@@ -322,13 +322,13 @@ export const ShoppingCart: React.FC = () => {
                 <h4>{item.name}</h4>
                 <p>Price: ${item.price}</p>
                 <div className="quantity-controls">
-                  <button onClick={() => 
+                  <button onClick={() =>
                     handleUpdateQuantity(item.nodeID, item.quantity - 1)
                   }>
                     -
                   </button>
                   <span>Qty: {item.quantity}</span>
-                  <button onClick={() => 
+                  <button onClick={() =>
                     handleUpdateQuantity(item.nodeID, item.quantity + 1)
                   }>
                     +
@@ -341,14 +341,14 @@ export const ShoppingCart: React.FC = () => {
               </div>
             ))}
           </div>
-          
+
           <div className="cart-summary">
             <h3>Total: ${totalPrice.toFixed(2)}</h3>
             <button className="checkout-button">Checkout</button>
           </div>
         </>
       )}
-      
+
       {/* Example add product buttons */}
       <div className="product-examples">
         <h3>Sample Products</h3>
@@ -381,12 +381,12 @@ export const ShoppingCart: React.FC = () => {
 ```typescript
 const TodoListWithErrorHandling: React.FC = () => {
   const [retryCount, setRetryCount] = useState(0);
-  
-  const { 
-    items, 
-    addToSet, 
-    error, 
-    isLoading 
+
+  const {
+    items,
+    addToSet,
+    error,
+    isLoading
   } = useGunCollectionState<TodoItem>(ref);
 
   // Retry mechanism
@@ -400,27 +400,27 @@ const TodoListWithErrorHandling: React.FC = () => {
     if (error.context === 'useGunCollectionState connection') {
       return (
         <div className="connection-error">
-          <h3>🌐 Connection Error</h3>
+          <h3>Connection Error</h3>
           <p>Unable to connect to the Gun network</p>
           <button onClick={handleRetry}>Retry Connection</button>
         </div>
       );
     }
-    
+
     if (error.context?.includes('addToSet')) {
       return (
         <div className="operation-error">
-          <h3>⚠️ Failed to Add Item</h3>
+          <h3>Failed to Add Item</h3>
           <p>{error.err}</p>
           <button onClick={handleRetry}>Try Again</button>
         </div>
       );
     }
-    
+
     // Generic error fallback
     return (
       <div className="generic-error">
-        <h3>🚨 Something went wrong</h3>
+        <h3>Something went wrong</h3>
         <p>{error.err}</p>
         <details>
           <summary>Error Details</summary>
@@ -442,7 +442,8 @@ const TodoListWithErrorHandling: React.FC = () => {
 ### Before (v0.9.x)
 
 ```typescript
-const { collection, addToSet, updateInSet, removeFromSet } = useGunCollectionState(ref);
+const { collection, addToSet, updateInSet, removeFromSet } =
+  useGunCollectionState(ref);
 
 // Manual array conversion
 const items = collection ? Array.from(collection.values()) : [];
@@ -455,11 +456,11 @@ addToSet(data); // Could fail silently
 ### After (v1.0.0)
 
 ```typescript
-const { 
+const {
   collection,           // Still available as Map
   items,               // NEW: Direct array access
-  addToSet, 
-  updateInSet, 
+  addToSet,
+  updateInSet,
   removeFromSet,
   error,               // NEW: Error state
   isLoading,           // NEW: Loading state
@@ -491,18 +492,18 @@ import { useMemo, useCallback } from 'react';
 
 const OptimizedCollection: React.FC = () => {
   const { items, addToSet } = useGunCollectionState<TodoItem>(ref);
-  
+
   // Memoize filtered/sorted data
-  const completedTodos = useMemo(() => 
-    items.filter(todo => todo.completed), 
+  const completedTodos = useMemo(() =>
+    items.filter(todo => todo.completed),
     [items]
   );
-  
-  const sortedTodos = useMemo(() => 
+
+  const sortedTodos = useMemo(() =>
     items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [items]
   );
-  
+
   // Memoize event handlers
   const handleAddTodo = useCallback(async (text: string) => {
     await addToSet({
@@ -511,7 +512,7 @@ const OptimizedCollection: React.FC = () => {
       createdAt: new Date().toISOString()
     });
   }, [addToSet]);
-  
+
   return (
     <div>
       <h3>Completed: {completedTodos.length}</h3>

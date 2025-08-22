@@ -1,6 +1,33 @@
-# useAuth Hook
+# useAuth
 
-The `useAuth` hook provides comprehensive authentication functionality for GunDB applications, including automatic key generation, storage management, and authentication state tracking.
+A comprehensive authentication hook for GunDB applications that provides automatic key generation, storage management, and authentication state tracking.
+
+## Overview
+
+The `useAuth` hook provides a complete authentication solution for GunDB applications, managing user keys, authentication state, and secure storage automatically. It integrates seamlessly with the `AuthProvider` component to deliver a robust authentication system.
+
+## API Reference
+
+### Signature
+
+```typescript
+useAuth(): AuthContextType
+```
+
+### Return Type
+
+```typescript
+interface AuthContextType {
+  gun: IGunChainReference; // Gun instance
+  user: IGunUserReference; // Authenticated user reference
+  login: (keys?: KeyPair | string) => void; // Login function
+  logout: (onLoggedOut?: () => void) => void; // Logout function
+  sea: any; // SEA instance
+  appKeys: KeyPair | string | undefined; // Current keys
+  isLoggedIn: boolean; // Authentication status
+  newGunInstance: (opts?: GunOptions) => IGunChainReference; // Create new Gun instance
+}
+```
 
 ## Basic Usage
 
@@ -12,10 +39,10 @@ import 'gun/sea';
 // Wrap your app with AuthProvider
 function App() {
   return (
-    <AuthProvider 
-      Gun={Gun} 
-      sea={Gun.SEA} 
-      storage={localStorage} 
+    <AuthProvider
+      Gun={Gun}
+      sea={Gun.SEA}
+      storage={localStorage}
       gunOpts={{ peers: ['http://localhost:8765/gun'] }}
     >
       <AuthenticatedApp />
@@ -25,13 +52,13 @@ function App() {
 
 // Use authentication in components
 function AuthenticatedApp() {
-  const { 
-    user, 
-    login, 
-    logout, 
-    isLoggedIn, 
-    appKeys, 
-    gun 
+  const {
+    user,
+    login,
+    logout,
+    isLoggedIn,
+    appKeys,
+    gun
   } = useAuth();
 
   return (
@@ -50,46 +77,6 @@ function AuthenticatedApp() {
       )}
     </div>
   );
-}
-```
-
-## API Reference
-
-### AuthProvider Props
-
-```typescript
-interface AuthProviderOpts {
-  Gun: any;                    // Gun constructor
-  sea: any;                    // SEA instance (Gun.SEA)
-  keyFieldName?: string;       // Storage key name (default: 'keys')
-  storage: Storage;            // Storage implementation
-  gunOpts: GunOptions;         // Gun instance options
-  children: React.ReactNode;   // Child components
-}
-```
-
-### Storage Interface
-
-```typescript
-interface Storage {
-  getItem: (key: string) => any;
-  setItem: (key: string, data: string) => any;
-  removeItem: (key: string) => any;
-}
-```
-
-### useAuth Return Value
-
-```typescript
-interface AuthContextType {
-  gun: IGunChainReference;                           // Gun instance
-  user: IGunUserReference;                           // Authenticated user reference
-  login: (keys?: KeyPair | string) => void;         // Login function
-  logout: (onLoggedOut?: () => void) => void;       // Logout function
-  sea: any;                                          // SEA instance
-  appKeys: KeyPair | string | undefined;            // Current keys
-  isLoggedIn: boolean;                               // Authentication status
-  newGunInstance: (opts?: GunOptions) => IGunChainReference; // Create new Gun instance
 }
 ```
 
@@ -135,7 +122,7 @@ function LoginForm() {
 
   return (
     <div>
-      <textarea 
+      <textarea
         value={keyInput}
         onChange={(e) => setKeyInput(e.target.value)}
         placeholder="Paste your keys here..."
@@ -199,7 +186,7 @@ function LogoutButton() {
 function UserProfile() {
   const { user, isLoggedIn } = useAuth();
   const { fields, put, error } = useGunState(
-    user?.get('profile'), 
+    user?.get('profile'),
     { appKeys: user?.is }
   );
 
@@ -207,7 +194,7 @@ function UserProfile() {
 
   return (
     <div>
-      <input 
+      <input
         value={fields.name || ''}
         onChange={(e) => put({ name: e.target.value })}
       />
@@ -269,6 +256,41 @@ function AuthStatus() {
 }
 ```
 
+## Migration from v0.9.x
+
+### Before (v0.9.x)
+
+```typescript
+// Manual authentication management
+const [keys, setKeys] = useState(null);
+const [user, setUser] = useState(null);
+const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+// Manual key storage
+useEffect(() => {
+  const storedKeys = localStorage.getItem('keys');
+  if (storedKeys) {
+    setKeys(JSON.parse(storedKeys));
+  }
+}, []);
+```
+
+### After (v1.0.0)
+
+```typescript
+// Automatic authentication with AuthProvider
+function App() {
+  return (
+    <AuthProvider Gun={Gun} sea={Gun.SEA} storage={localStorage} gunOpts={opts}>
+      <AuthenticatedApp />
+    </AuthProvider>
+  );
+}
+
+// Simple hook usage
+const { user, login, logout, isLoggedIn, appKeys } = useAuth();
+```
+
 ## Best Practices
 
 1. **Always wrap your app** with `AuthProvider` at the root level
@@ -283,12 +305,16 @@ function AuthStatus() {
 All authentication features are fully typed:
 
 ```typescript
-import type { KeyPair, AuthContextType, Storage } from '@altrx/gundb-react-hooks';
+import type {
+  KeyPair,
+  AuthContextType,
+  Storage,
+} from '@altrx/gundb-react-hooks';
 
 const customStorage: Storage = {
   getItem: (key: string) => localStorage.getItem(key),
   setItem: (key: string, data: string) => localStorage.setItem(key, data),
-  removeItem: (key: string) => localStorage.removeItem(key)
+  removeItem: (key: string) => localStorage.removeItem(key),
 };
 ```
 
@@ -299,11 +325,11 @@ const customStorage: Storage = {
 ```typescript
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn } = useAuth();
-  
+
   if (!isLoggedIn) {
     return <LoginForm />;
   }
-  
+
   return <>{children}</>;
 }
 ```

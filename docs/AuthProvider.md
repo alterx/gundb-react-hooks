@@ -1,18 +1,44 @@
 # AuthProvider
 
-The `AuthProvider` component is a React context provider that manages GunDB authentication state, key generation, and secure storage across your application.
+A React context provider that manages GunDB authentication state, key generation, and secure storage across your application.
 
 ## Overview
 
-`AuthProvider` automatically handles:
+`AuthProvider` automatically handles key pair generation, secure storage, authentication flow, and cross-platform storage abstraction. It serves as the foundation for the authentication system in GunDB React applications.
 
-- Key pair generation and management
-- Secure key storage and retrieval
-- Automatic authentication with stored keys
-- Cross-platform storage abstraction
-- Error handling and recovery
+## API Reference
 
-## Basic Setup
+### Props
+
+#### Required Props
+
+| Prop       | Type              | Description                                        |
+| ---------- | ----------------- | -------------------------------------------------- |
+| `Gun`      | `any`             | Gun constructor function                           |
+| `sea`      | `any`             | SEA (Security, Encryption, Authorization) instance |
+| `storage`  | `Storage`         | Storage implementation for key persistence         |
+| `gunOpts`  | `GunOptions`      | Configuration options for Gun instance             |
+| `children` | `React.ReactNode` | Child components to wrap                           |
+
+#### Optional Props
+
+| Prop           | Type     | Default  | Description                              |
+| -------------- | -------- | -------- | ---------------------------------------- |
+| `keyFieldName` | `string` | `'keys'` | Storage key name for persisting keypairs |
+
+### Storage Interface
+
+```typescript
+interface Storage {
+  getItem: (key: string) => any;
+  setItem: (key: string, data: string) => any;
+  removeItem: (key: string) => any;
+}
+```
+
+## Basic Usage
+
+### Simple Setup
 
 ```typescript
 import { AuthProvider } from '@altrx/gundb-react-hooks';
@@ -36,37 +62,9 @@ function App() {
 }
 ```
 
-## Props
+## Advanced Usage
 
-### Required Props
-
-| Prop       | Type              | Description                                        |
-| ---------- | ----------------- | -------------------------------------------------- |
-| `Gun`      | `any`             | Gun constructor function                           |
-| `sea`      | `any`             | SEA (Security, Encryption, Authorization) instance |
-| `storage`  | `Storage`         | Storage implementation for key persistence         |
-| `gunOpts`  | `GunOptions`      | Configuration options for Gun instance             |
-| `children` | `React.ReactNode` | Child components to wrap                           |
-
-### Optional Props
-
-| Prop           | Type     | Default  | Description                              |
-| -------------- | -------- | -------- | ---------------------------------------- |
-| `keyFieldName` | `string` | `'keys'` | Storage key name for persisting keypairs |
-
-## Storage Interface
-
-The storage prop must implement this interface:
-
-```typescript
-interface Storage {
-  getItem: (key: string) => any;
-  setItem: (key: string, data: string) => any;
-  removeItem: (key: string) => any;
-}
-```
-
-## Platform-Specific Storage
+### Platform-Specific Storage
 
 ### Web (localStorage)
 
@@ -167,91 +165,9 @@ const secureStorage = {
 />
 ```
 
-## Authentication Flow
-
-The `AuthProvider` manages a sophisticated authentication flow:
-
-```
-1. Provider initializes
-   ↓
-2. Check storage for existing keys
-   ↓
-3. If keys exist → authenticate automatically
-   ↓
-4. If no keys → wait for login() call
-   ↓
-5. Generate new keys or use provided keys
-   ↓
-6. Authenticate with GunDB
-   ↓
-7. Store keys securely
-   ↓
-8. Update authentication state
-```
-
-## Advanced Configuration
-
-### Multiple Apps with Different Keys
-
-```typescript
-// App 1
-<AuthProvider
-  keyFieldName="app1-keys"
-  gunOpts={{ peers: ['http://app1.com/gun'] }}
-  // ... other props
-/>
-
-// App 2
-<AuthProvider
-  keyFieldName="app2-keys"
-  gunOpts={{ peers: ['http://app2.com/gun'] }}
-  // ... other props
-/>
-```
-
-### Custom Gun Configuration
-
-```typescript
-<AuthProvider
-  Gun={Gun}
-  sea={Gun.SEA}
-  storage={localStorage}
-  gunOpts={{
-    peers: [
-      'https://gun-relay-1.herokuapp.com/gun',
-      'https://gun-relay-2.herokuapp.com/gun'
-    ],
-    localStorage: false,
-    radisk: true,
-    multicast: false,
-    // Custom options
-    retry: 3,
-    timeout: 5000
-  }}
->
-  <App />
-</AuthProvider>
-```
-
-### Environment-Based Configuration
-
-```typescript
-const gunOpts = {
-  peers: process.env.NODE_ENV === 'production'
-    ? ['https://prod-gun-server.com/gun']
-    : ['http://localhost:8765/gun'],
-  localStorage: process.env.NODE_ENV !== 'test'
-};
-
-<AuthProvider
-  gunOpts={gunOpts}
-  // ... other props
-/>
-```
-
 ## Error Handling
 
-The `AuthProvider` includes comprehensive error handling:
+### Comprehensive Error Management
 
 ```typescript
 function AppWithErrorHandling() {
@@ -279,150 +195,36 @@ class ErrorBoundary extends React.Component {
 
   render() {
     // Error UI
+    return this.state.hasError ? <ErrorComponent /> : this.props.children;
   }
 }
 ```
 
-## Testing
+## Migration from v0.9.x
 
-### Mock Storage for Testing
+### Before (v0.9.x)
 
 ```typescript
-const mockStorage = {
-  data: new Map(),
-  getItem: (key: string) => mockStorage.data.get(key) || null,
-  setItem: (key: string, data: string) => mockStorage.data.set(key, data),
-  removeItem: (key: string) => mockStorage.data.delete(key)
-};
+// Manual provider setup with limited features
+import { GunProvider } from '@altrx/gundb-react-auth';
 
-// In tests
+<GunProvider gun={Gun} options={gunOpts}>
+  <App />
+</GunProvider>
+```
+
+### After (v1.0.0)
+
+```typescript
+// Enhanced provider with built-in authentication
+import { AuthProvider } from '@altrx/gundb-react-hooks';
+
 <AuthProvider
-  storage={mockStorage}
-  // ... other props
-/>
-```
-
-### Test Helper
-
-```typescript
-export function createTestAuthProvider(overrides = {}) {
-  const defaultProps = {
-    Gun: MockGun,
-    sea: MockSEA,
-    storage: mockStorage,
-    gunOpts: { peers: [] },
-    ...overrides
-  };
-
-  return ({ children }: { children: React.ReactNode }) => (
-    <AuthProvider {...defaultProps}>
-      {children}
-    </AuthProvider>
-  );
-}
-```
-
-## Performance Considerations
-
-### Memoization
-
-The `AuthProvider` automatically memoizes expensive operations:
-
-```typescript
-// Values are memoized based on dependencies
-const value = useMemo(
-  () => ({
-    gun,
-    user,
-    login,
-    logout,
-    sea,
-    appKeys: existingKeys || newKeys,
-    isLoggedIn,
-    newGunInstance,
-  }),
-  [
-    gun,
-    user,
-    login,
-    logout,
-    sea,
-    newKeys,
-    existingKeys,
-    isLoggedIn,
-    newGunInstance,
-  ],
-);
-```
-
-### Avoiding Re-renders
-
-```typescript
-// Use callbacks to prevent unnecessary re-renders
-const { login, logout } = useAuth();
-
-// This won't cause re-renders when the component updates
-const memoizedLogin = useCallback(() => {
-  login();
-}, [login]);
-```
-
-## Security Best Practices
-
-1. **Use HTTPS** in production for Gun peers
-2. **Encrypt sensitive storage** especially in web environments
-3. **Validate storage data** before using retrieved keys
-4. **Use secure key generation** (let SEA handle it)
-5. **Clear keys on logout** to prevent unauthorized access
-
-## Common Patterns
-
-### Loading States
-
-```typescript
-function App() {
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  return (
-    <AuthProvider onInitialized={() => setIsInitialized(true)}>
-      {isInitialized ? <MainApp /> : <LoadingScreen />}
-    </AuthProvider>
-  );
-}
-```
-
-### Multi-tenancy
-
-```typescript
-function MultiTenantApp({ tenantId }: { tenantId: string }) {
-  const gunOpts = useMemo(() => ({
-    peers: [`https://${tenantId}.myapp.com/gun`]
-  }), [tenantId]);
-
-  return (
-    <AuthProvider
-      keyFieldName={`keys-${tenantId}`}
-      gunOpts={gunOpts}
-    >
-      <TenantApp />
-    </AuthProvider>
-  );
-}
-```
-
-## Migration from Standalone Auth
-
-If you're migrating from `@altrx/gundb-react-auth`:
-
-```typescript
-// Before
-import { GunProvider, useAuth } from '@altrx/gundb-react-auth';
-
-// After
-import { AuthProvider, useAuth } from '@altrx/gundb-react-hooks';
-
-// Usage is identical, just change the import and component name
-<AuthProvider /* same props */ >
+  Gun={Gun}
+  sea={Gun.SEA}
+  storage={localStorage}
+  gunOpts={gunOpts}
+>
   <App />
 </AuthProvider>
 ```

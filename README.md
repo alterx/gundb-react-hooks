@@ -16,6 +16,7 @@ Type-safe, performant GunDB hooks for React/Preact with comprehensive error hand
 - **React & Preact** - Support for both frameworks
 - **Real-time** - Live updates with efficient debouncing
 - **Authentication** - Built-in auth provider with key management and storage
+- **Pagination** - High-performance paginated collections with smart caching ⭐ **New!**
 
 ## Quick Start
 
@@ -138,14 +139,26 @@ function TypeSafeApp() {
     isLoading: profileLoading
   } = useGunState<UserProfile>(gun.get('user').get('profile'));
 
-  // Type-safe todo collection
+  // Type-safe todo collection with pagination
   const {
-    items: todos,
+    currentPageItems: todos,
     addToSet: addTodo,
     removeFromSet: removeTodo,
+    updateInSet: updateTodo,
     error: todosError,
-    count: todoCount
-  } = useGunCollectionState<TodoItem>(gun.get('todos'));
+    totalItems: todoCount,
+    currentPage,
+    totalPages,
+    nextPage,
+    prevPage,
+    pageSize,
+    setPageSize
+  } = useGunCollectionStatePaginated<TodoItem>(gun.get('todos'), {
+    pageSize: 10,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    preloadPages: 1
+  });
 
   const handleAddTodo = async () => {
     try {
@@ -166,13 +179,37 @@ function TypeSafeApp() {
   return (
     <div>
       <h1>{profile.name}'s Todos ({todoCount})</h1>
+
+      {/* Pagination Controls */}
+      <div>
+        <span>Page {currentPage + 1} of {totalPages}</span>
+        <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
+          <option value={5}>5 per page</option>
+          <option value={10}>10 per page</option>
+          <option value={20}>20 per page</option>
+        </select>
+      </div>
+
+      {/* Todo Items */}
       {todos.map(todo => (
         <TodoItem
           key={todo.nodeID}
           todo={todo}
+          onToggle={() => updateTodo(todo.nodeID, { completed: !todo.completed })}
           onRemove={() => removeTodo(todo.nodeID)}
         />
       ))}
+
+      {/* Pagination Navigation */}
+      <div>
+        <button onClick={prevPage} disabled={currentPage === 0}>
+          Previous
+        </button>
+        <button onClick={nextPage} disabled={currentPage >= totalPages - 1}>
+          Next
+        </button>
+      </div>
+
       <button onClick={handleAddTodo}>Add Todo</button>
     </div>
   );
@@ -226,6 +263,33 @@ const {
   isLoading, // boolean
   count, // number
 } = useGunCollectionState<T>(ref, options);
+```
+
+#### `useGunCollectionStatePaginated<T>(ref, options)`
+
+High-performance paginated collections with smart caching and real-time updates.
+
+```typescript
+const {
+  currentPageItems, // NodeT<T>[] - Current page items
+  currentPage, // number - Current page index (0-based)
+  totalPages, // number - Total number of pages
+  pageSize, // number - Items per page
+  setPageSize, // (size: number) => void
+  nextPage, // () => void
+  prevPage, // () => void
+  goToPage, // (page: number) => void
+  hasNextPage, // boolean
+  hasPrevPage, // boolean
+  isLoadingPage, // boolean
+  totalItems, // number - Total items in collection
+  // ... all useGunCollectionState methods
+  addToSet, // (data: T, nodeID?: string) => Promise<void>
+  updateInSet, // (nodeID: string, data: Partial<T>) => Promise<void>
+  removeFromSet, // (nodeID: string) => Promise<void>
+  error, // GunError | null
+  preloadedPages, // Set<number> - Cached pages
+} = useGunCollectionStatePaginated<T>(ref, options);
 ```
 
 #### `useGunKeyAuth(gun, keys, triggerAuth?)`
@@ -402,6 +466,30 @@ const handleAddItem = useCallback(
 
 ## Migration from v0.9.x
 
+### New Pagination Hook
+
+v1.0.0 introduces `useGunCollectionStatePaginated` for high-performance collection management:
+
+```typescript
+// Before: Basic collection
+const { items, addToSet } = useGunCollectionState(ref);
+
+// After: Paginated with optimization
+const { currentPageItems, addToSet, nextPage, totalPages } =
+  useGunCollectionStatePaginated(ref, {
+    pageSize: 20,
+    sortBy: 'createdAt',
+    preloadPages: 2,
+  });
+```
+
+### Performance Benefits
+
+- **Memory Efficient**: Only loads current page + preloaded pages
+- **Smart Caching**: 5-minute page cache with automatic invalidation
+- **Real-time Updates**: Debounced live synchronization
+- **Type Safety**: Full TypeScript support with inference
+
 For detailed migration instructions and compatibility information, see the detailed documentation for each hook.
 
 ## Development & Testing
@@ -439,6 +527,7 @@ function AppWithErrorBoundary() {
 - [useGunOnNodeUpdated](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunOnNodeUpdated.md)
 - [useGunState](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunState.md)
 - [useGunCollectionState](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunCollectionState.md)
+- [useGunCollectionStatePaginated](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunCollectionStatePaginated.md) ⭐ **New!**
 - [useAuth](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useAuth.md)
 - [AuthProvider](https://github.com/alterx/gundb-react-hooks/blob/master/docs/AuthProvider.md)
 
