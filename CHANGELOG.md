@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0rc3] - 2025-08-22
+
+### Fixed
+
+- exports in package.json
+
+## [1.0.0rc2] - 2025-08-22
+
+### Fixed
+
+- Performance and compatibility issues.
+
+## [1.0.0rc1] - 2025-08-21
+
+### Added
+
+- **`useGunCollectionStatePaginated`** - A high-performance, memory-efficient hook for managing paginated GunDB collections with smart caching, real-time updates, and comprehensive filtering/sorting capabilities.
+
+### Documentation
+
+- Removed unused migration references
+
 ## [1.0.0] - 2025-08-21
 
 ### Major Release - Complete Rewrite
