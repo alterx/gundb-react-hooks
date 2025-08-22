@@ -49,7 +49,6 @@ var decryptData = function decryptData(data, keys, sea) {
     return Promise.reject(e);
   }
 };
-// Utility functions
 var debounce = function debounce(func, wait) {
   var timeout = null;
   return function () {
@@ -73,7 +72,6 @@ var validateData = function validateData(data, context) {
   }
 };
 var warnInDevelopment = function warnInDevelopment(condition, message) {
-  // @ts-ignore
   if (typeof window !== 'undefined' && condition) {
     console.warn("[GunDB Hooks Warning] " + message);
   }
@@ -112,7 +110,6 @@ var debouncedUpdates = function debouncedUpdates(dispatcher, type, timeout) {
       handler = null;
     };
   };
-  // Add cleanup method to the function
   updateFunction.cleanup = function () {
     if (handler) {
       clearTimeout(handler);
@@ -247,14 +244,12 @@ var useGunKeyAuth = function useGunKeyAuth(gun, keys, triggerAuth) {
       }
     };
   }, [gun]);
-  // Reset isLoggedIn when keys are cleared or triggerAuth is false
   React.useEffect(function () {
     if (!keys || !triggerAuth) {
       setIsLoggedIn(false);
       setError(null);
     }
   }, [keys, triggerAuth]);
-  // Check if user is still authenticated
   React.useEffect(function () {
     if (namespacedGraph && namespacedGraph.is) {
       setIsLoggedIn(true);
@@ -355,7 +350,6 @@ var useGunOnNodeUpdated = function useGunOnNodeUpdated(ref, opts, cb, cleanup) {
     }
     return function () {
       if (handler.current) {
-        //cleanup gun .on listener
         handler.current();
         handler.current = null;
       }
@@ -403,12 +397,10 @@ var useGunState = function useGunState(ref, opts) {
     setIsConnected = _useState8[1];
   var debouncedHandlers = React.useRef([]);
   var isMounted = useIsMounted();
-  // Development warnings
   React.useEffect(function () {
     warnInDevelopment(!ref, 'useGunState: ref is undefined');
     warnInDevelopment(!!(appKeys && !sea), 'useGunState: appKeys provided but no SEA instance');
   }, [ref, appKeys, sea]);
-  // Memoized updater - stabilize with useCallback
   var updater = React.useCallback(debouncedUpdates(function (data) {
     if (isMounted.current) {
       dispatch({
@@ -420,7 +412,6 @@ var useGunState = function useGunState(ref, opts) {
       setError(null);
     }
   }, 'object', interval), [interval, isMounted]);
-  // Connection timeout
   React.useEffect(function () {
     var connectionTimeout = setTimeout(function () {
       if (isLoading) {
@@ -430,12 +421,11 @@ var useGunState = function useGunState(ref, opts) {
         });
         setIsLoading(false);
       }
-    }, 5000); // 5 second timeout
+    }, 5000);
     return function () {
       return clearTimeout(connectionTimeout);
     };
   }, [isLoading]);
-  // Memoized callback to prevent infinite re-renders
   var nodeUpdateCallback = React.useCallback(function (item) {
     try {
       if (item && typeof item === 'object') {
@@ -454,10 +444,8 @@ var useGunState = function useGunState(ref, opts) {
       });
     }
   }, [updater]);
-  // Memoized cleanup callback
   var cleanupCallback = React.useCallback(function () {
     if (debouncedHandlers.current.length) {
-      //cleanup timeouts
       debouncedHandlers.current.forEach(function (c) {
         return c();
       });
@@ -465,7 +453,6 @@ var useGunState = function useGunState(ref, opts) {
     }
   }, []);
   useGunOnNodeUpdated(ref, memoizedOpts, nodeUpdateCallback, cleanupCallback);
-  // Enhanced put with validation and error handling
   var put = React.useCallback(function (data) {
     try {
       if (!ref) {
@@ -502,7 +489,6 @@ var useGunState = function useGunState(ref, opts) {
       return Promise.reject(e);
     }
   }, [ref, appKeys, sea]);
-  // Enhanced remove with validation
   var remove = React.useCallback(function (field) {
     try {
       if (!ref) {
@@ -569,7 +555,6 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
     _opts3$interval = _opts3.interval,
     interval = _opts3$interval === void 0 ? 100 : _opts3$interval,
     useOpen = _opts3.useOpen;
-  // Memoize the options to prevent unnecessary re-renders
   var memoizedOpts = React.useMemo(function () {
     return {
       appKeys: appKeys,
@@ -591,23 +576,18 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
     setIsLoading = _useState10[1];
   var debouncedHandlers = React.useRef([]);
   var isMounted = useIsMounted();
-  // Early return if ref is null/undefined
   var hasValidRef = Boolean(ref);
-  // Development warnings
   React.useEffect(function () {
     warnInDevelopment(!ref, 'useGunCollectionState: ref is undefined');
     warnInDevelopment(!!(appKeys && !sea), 'useGunCollectionState: appKeys provided but no SEA instance');
   }, [ref, appKeys, sea]);
-  // Set loading to false if no valid ref
   React.useEffect(function () {
     if (!hasValidRef) {
       setIsLoading(false);
     }
   }, [hasValidRef]);
-  // Memoized updater - stabilize with useCallback
   var updater = React.useCallback(debouncedUpdates(function (dataMap) {
     if (isMounted.current) {
-      // Convert Map to array of items for batch dispatch
       var _items = Array.from(dataMap.values());
       dispatch({
         type: 'add',
@@ -617,7 +597,6 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
       setError(null);
     }
   }, 'map', interval), [interval, isMounted]);
-  // Connection timeout
   React.useEffect(function () {
     var connectionTimeout = setTimeout(function () {
       if (isLoading) {
@@ -632,7 +611,6 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
       return clearTimeout(connectionTimeout);
     };
   }, [isLoading]);
-  // Memoized callback to prevent infinite re-renders
   var nodeUpdateCallback = React.useCallback(function (item, nodeID) {
     if (item && typeof item === 'object') {
       try {
@@ -652,10 +630,8 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
       }
     }
   }, [updater]);
-  // Memoized cleanup callback
   var cleanupCallback = React.useCallback(function () {
     if (debouncedHandlers.current.length) {
-      //cleanup timeouts
       debouncedHandlers.current.forEach(function (c) {
         return c();
       });
@@ -663,7 +639,6 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
     }
   }, []);
   useGunOnNodeUpdated(ref ? ref.map() : null, memoizedOpts, nodeUpdateCallback, cleanupCallback);
-  // Working with Sets - Enhanced CRUD operations
   var updateInSet = React.useCallback(function (nodeID, data) {
     try {
       if (!ref) {
@@ -783,7 +758,6 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
       return Promise.reject(e);
     }
   }, [ref, isMounted]);
-  // Convert Map to Array for easier consumption
   var items = React.useMemo(function () {
     return Array.from(collection.values());
   }, [collection]);
@@ -801,7 +775,6 @@ var useGunCollectionState = function useGunCollectionState(ref, opts) {
     count: count
   };
 };
-// Paginated Collection Hook with Optimizations
 var useGunCollectionStatePaginated = function useGunCollectionStatePaginated(ref, paginationOpts) {
   if (paginationOpts === void 0) {
     paginationOpts = {};
@@ -846,17 +819,13 @@ var useGunCollectionStatePaginated = function useGunCollectionStatePaginated(ref
   var _useState14 = React.useState(0),
     totalItems = _useState14[0],
     setTotalItems = _useState14[1];
-  // Sync currentPage state with initialPage prop when it changes
   React.useEffect(function () {
     setCurrentPage(initialPage);
   }, [initialPage]);
-  // Cache for pages
   var pageCache = React.useRef(new Map());
   var cacheTimestamps = React.useRef(new Map());
-  var CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-  // Use original hook for basic collection management
+  var CACHE_TTL = 5 * 60 * 1000;
   var baseCollection = useGunCollectionState(ref, opts);
-  // Cache utilities - memoize to prevent re-creation
   var getCachedPage = React.useCallback(function (page) {
     var cached = pageCache.current.get(page);
     var timestamp = cacheTimestamps.current.get(page);
@@ -869,12 +838,9 @@ var useGunCollectionStatePaginated = function useGunCollectionStatePaginated(ref
     pageCache.current.set(page, items);
     cacheTimestamps.current.set(page, Date.now());
   }, []);
-  // Process and sort all items - memoize with stable dependencies
   var processedItems = React.useMemo(function () {
     var allItems = Array.from(baseCollection.collection.values());
-    // Apply filtering
     var filteredItems = filter ? allItems.filter(filter) : allItems;
-    // Apply sorting
     if (sortBy) {
       filteredItems = [].concat(filteredItems).sort(function (a, b) {
         if (typeof sortBy === 'function') {
@@ -889,34 +855,27 @@ var useGunCollectionStatePaginated = function useGunCollectionStatePaginated(ref
     }
     return filteredItems;
   }, [baseCollection.collection, filter, sortBy, sortOrder]);
-  // Update total items when processed items change
   React.useEffect(function () {
     setTotalItems(processedItems.length);
-    // Clear cache when data changes significantly
     pageCache.current.clear();
     cacheTimestamps.current.clear();
   }, [processedItems]);
-  // Load specific page - memoize to prevent unnecessary recreations
   var loadPage = React.useCallback(function (page) {
     try {
       if (page < 0) return Promise.resolve();
       setIsLoadingPage(true);
       try {
-        // Check cache first
         var cached = getCachedPage(page);
         if (cached) {
           setCurrentPageItems(cached);
           setIsLoadingPage(false);
           return Promise.resolve();
         }
-        // Extract page from processed items
         var startIndex = page * pageSize;
         var endIndex = startIndex + pageSize;
         var pageItems = processedItems.slice(startIndex, endIndex);
-        // Cache the page
         setCachedPage(page, pageItems);
         setCurrentPageItems(pageItems);
-        // Preload adjacent pages
         var _loop = function _loop() {
           var nextPage = page + i;
           var prevPage = page - i;
@@ -950,7 +909,6 @@ var useGunCollectionStatePaginated = function useGunCollectionStatePaginated(ref
       return Promise.reject(e);
     }
   }, [pageSize, processedItems, preloadPages, getCachedPage, setCachedPage]);
-  // Pagination calculations - memoize to prevent recalculations
   var totalPages = React.useMemo(function () {
     return Math.ceil(totalItems / pageSize);
   }, [totalItems, pageSize]);
@@ -960,7 +918,6 @@ var useGunCollectionStatePaginated = function useGunCollectionStatePaginated(ref
   var hasPrevPage = React.useMemo(function () {
     return currentPage > 0;
   }, [currentPage]);
-  // Pagination controls - memoize to prevent re-creation
   var nextPage = React.useCallback(function () {
     if (hasNextPage) {
       var newPage = currentPage + 1;
@@ -983,19 +940,15 @@ var useGunCollectionStatePaginated = function useGunCollectionStatePaginated(ref
   }, [totalPages, loadPage]);
   var setNewPageSize = React.useCallback(function (size) {
     if (size <= 0) return;
-    // Calculate which item we're currently viewing
     var currentItemIndex = currentPage * pageSize;
-    // Calculate new page number to maintain position
     var newPage = Math.floor(currentItemIndex / size);
     setCurrentPage(newPage);
-    pageCache.current.clear(); // Clear cache since page size changed
+    pageCache.current.clear();
     cacheTimestamps.current.clear();
     loadPage(newPage)["catch"](console.error);
   }, [currentPage, pageSize, loadPage]);
-  // Load current page when page changes or data updates
   React.useEffect(function () {
     if (totalPages > 0) {
-      // Ensure current page is valid
       if (currentPage >= totalPages) {
         var newPage = Math.max(0, totalPages - 1);
         setCurrentPage(newPage);
@@ -1004,28 +957,22 @@ var useGunCollectionStatePaginated = function useGunCollectionStatePaginated(ref
         loadPage(currentPage)["catch"](console.error);
       }
     } else if (processedItems.length > 0) {
-      // Even if totalPages calculation isn't ready, try to load the current page
       loadPage(currentPage)["catch"](console.error);
     }
   }, [currentPage, totalPages, loadPage, processedItems.length]);
-  // Initial load effect - ensure pagination happens on mount
   React.useEffect(function () {
     if (processedItems.length > 0) {
       loadPage(currentPage)["catch"](console.error);
     }
-  }, [processedItems.length]); // Only depend on length to avoid infinite re-renders
-  // Real-time updates - update cache when base collection changes
-  // Memoize and debounce this to prevent excessive updates
+  }, [processedItems.length]);
   var updatePageCache = React.useMemo(function () {
     return debounce(function (updatedItem) {
-      // Only update pages that might contain this item
       pageCache.current.forEach(function (page, pageNum) {
         var itemIndex = page.findIndex(function (item) {
           return item.nodeID === updatedItem.nodeID;
         });
         if (itemIndex !== -1) {
           page[itemIndex] = updatedItem;
-          // Trigger re-render only for current page
           if (pageNum === currentPage) {
             setCurrentPageItems([].concat(page));
           }
@@ -1033,7 +980,6 @@ var useGunCollectionStatePaginated = function useGunCollectionStatePaginated(ref
       });
     }, 100);
   }, [currentPage]);
-  // Watch for changes in base collection to update cache
   React.useEffect(function () {
     if (baseCollection.collection) {
       Array.from(baseCollection.collection.values()).forEach(function (item) {
@@ -1041,35 +987,27 @@ var useGunCollectionStatePaginated = function useGunCollectionStatePaginated(ref
       });
     }
   }, [baseCollection.collection, updatePageCache]);
-  // Memoize preloaded pages to prevent object recreation
   var preloadedPages = React.useMemo(function () {
     return new Set(Array.from(pageCache.current.keys()));
   }, []);
   return _extends({}, baseCollection, {
-    // Override items to return paginated items instead of all items
     items: currentPageItems,
-    // Override count to return total filtered items count
     count: totalItems,
-    // Pagination state
     currentPage: currentPage,
     totalPages: totalPages,
     hasNextPage: hasNextPage,
     hasPrevPage: hasPrevPage,
     pageSize: pageSize,
-    // Pagination actions
     nextPage: nextPage,
     prevPage: prevPage,
     goToPage: goToPage,
     setPageSize: setNewPageSize,
-    // Current page data
     currentPageItems: currentPageItems,
     currentPageCount: currentPageItems.length,
-    // Optimizations
     isLoadingPage: isLoadingPage,
     preloadedPages: preloadedPages
   });
 };
-// Auth Context and Provider
 var AuthContext = React.createContext(null);
 var AuthProvider = function AuthProvider(_ref4) {
   var Gun = _ref4.Gun,
@@ -1093,7 +1031,6 @@ var AuthProvider = function AuthProvider(_ref4) {
     keyStatus = _useState15$.keyStatus,
     setStatuses = _useState15[1];
   var gun = useGun(Gun, gunOpts);
-  // new keypair
   var newKeys = useGunKeys(sea);
   var _useGunKeyAuth = useGunKeyAuth(gun, existingKeys || undefined, isReadyToAuth === 'ready'),
     user = _useGunKeyAuth[0],
@@ -1145,7 +1082,6 @@ var AuthProvider = function AuthProvider(_ref4) {
     }
   }, [storage, keyFieldName, existingKeys]);
   var login = React.useCallback(function (keys) {
-    // use keys sent by the user or a new set
     setStatuses({
       isReadyToAuth: 'ready',
       existingKeys: keys || newKeys || null,
@@ -1216,7 +1152,6 @@ var useAuth = function useAuth() {
   }
   return context;
 };
-// Context provider for Gun instance
 var GunContext = React.createContext(null);
 var safeStringifyOptions = function safeStringifyOptions(options) {
   try {
@@ -1229,7 +1164,7 @@ var safeStringifyOptions = function safeStringifyOptions(options) {
       return value;
     });
   } catch (err) {
-    return String(Math.random()); // Force re-render if serialization fails
+    return String(Math.random());
   }
 };
 var GunProvider = function GunProvider(_ref5) {
@@ -1258,7 +1193,6 @@ var useGunContext = function useGunContext() {
   }
   return context;
 };
-// Debug utility hook
 var useGunDebug = function useGunDebug(ref, label, enabled) {
   if (enabled === void 0) {
     enabled = true;
@@ -1266,7 +1200,6 @@ var useGunDebug = function useGunDebug(ref, label, enabled) {
   React.useEffect(function () {
     if (!enabled || !ref) return;
     console.log("[GunDB Debug - " + label + "] Listening to:", ref);
-    // subscribe
     var off = ref.on(function (data, key) {
       console.log("[" + label + "] Update:", {
         key: key,
@@ -1274,7 +1207,6 @@ var useGunDebug = function useGunDebug(ref, label, enabled) {
         timestamp: new Date().toISOString()
       });
     });
-    // cleanup
     return function () {
       if (typeof off === 'function') {
         try {
@@ -1288,7 +1220,6 @@ var useGunDebug = function useGunDebug(ref, label, enabled) {
     };
   }, [ref, label, enabled]);
 };
-// Connection status hook
 var useGunConnection = function useGunConnection(ref) {
   var _useState16 = React.useState(false),
     isConnected = _useState16[0],
@@ -1310,16 +1241,14 @@ var useGunConnection = function useGunConnection(ref) {
           err: 'Connection timeout',
           context: 'useGunConnection'
         });
-      }, 10000); // 10 second timeout
+      }, 10000);
     };
-    // subscribe
     var off = ref.on(function () {
       setIsConnected(true);
       setLastSeen(new Date());
       setError(null);
       resetTimeout();
     });
-    // Initial timeout
     resetTimeout();
     return function () {
       clearTimeout(timeoutId);
