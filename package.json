@@ -1,6 +1,6 @@
 {
   "name": "@altrx/gundb-react-hooks",
-  "version": "1.0.0rc2",
+  "version": "1.0.0rc3",
   "description": "Type-safe, performant GunDB hooks for React/Preact with authentication, error handling, and debugging utilities",
   "browser": "./dist/gundb-react-hooks.umd.js",
   "umd:main": "./dist/gundb-react-hooks.umd.js",
@@ -13,14 +13,12 @@
   "typings": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "browser": "./dist/gundb-react-hooks.modern.js",
-      "umd": "./dist/gundb-react-hooks.umd.js",
+      "types": "./dist/index.d.ts",
       "import": "./dist/gundb-react-hooks.module.js",
       "require": "./dist/gundb-react-hooks.js"
     },
     "./preact": {
-      "browser": "./preact/dist/gundb-react-hooks.modern.js",
-      "umd": "./preact/dist/gundb-react-hooks.umd.js",
+      "types": "./preact/dist/index.d.ts",
       "import": "./preact/dist/gundb-react-hooks.module.js",
       "require": "./preact/dist/gundb-react-hooks.js"
     }
