@@ -30,7 +30,7 @@ export interface GunError {
 }
 export type ValidGunData = string | number | boolean | object | null;
 export type GunStatic = any;
-export type GunRef = IGunChainReference;
+export type GunRef = IGunChainReference | null;
 export type NamespacedRef = IGunUserReference;
 export type KeyPair = {
     pub: string;
@@ -109,15 +109,14 @@ export interface GunOptions extends Partial<{
     [key: string]: any;
 }> {
 }
-export interface CollectionState<T> extends Partial<{
+export interface CollectionState<T> {
     collection: Map<string, T>;
-    sorted: T[];
-    infiniteScrolling: {
+    sorted?: T[];
+    infiniteScrolling?: {
         isFetching: boolean;
         lastFetched: string;
         reverse: boolean;
     };
-}> {
 }
 export interface UseGunStateReturn<T> {
     fields: T;
@@ -128,7 +127,7 @@ export interface UseGunStateReturn<T> {
     isConnected: boolean;
 }
 export interface UseGunCollectionReturn<T> {
-    collection: Map<string, NodeT<T>> | undefined;
+    collection: Map<string, NodeT<T>>;
     items: NodeT<T>[];
     addToSet: (data: T, nodeID?: string) => Promise<void>;
     updateInSet: (nodeID: string, data: Partial<T>) => Promise<void>;
@@ -137,9 +136,35 @@ export interface UseGunCollectionReturn<T> {
     isLoading: boolean;
     count: number;
 }
+export interface PaginationOptions<T> extends Options {
+    pageSize?: number;
+    currentPage?: number;
+    sortBy?: keyof T | ((a: NodeT<T>, b: NodeT<T>) => number);
+    sortOrder?: 'asc' | 'desc';
+    filter?: (item: NodeT<T>) => boolean;
+    preloadPages?: number;
+}
+export interface UsePaginatedCollectionReturn<T> extends UseGunCollectionReturn<T> {
+    currentPage: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+    pageSize: number;
+    nextPage: () => void;
+    prevPage: () => void;
+    goToPage: (page: number) => void;
+    setPageSize: (size: number) => void;
+    currentPageItems: NodeT<T>[];
+    currentPageCount: number;
+    isLoadingPage: boolean;
+    preloadedPages: Set<number>;
+}
 export declare const encryptData: (data: any, keys: undefined | string | KeyPair, sea: any) => Promise<any>;
 export declare const decryptData: (data: any, keys: undefined | string | KeyPair, sea: any) => Promise<any>;
-export declare const debouncedUpdates: (dispatcher: any, type?: string, timeout?: number) => (update: UpdateType) => () => void;
+export declare const debouncedUpdates: (dispatcher: any, type?: string, timeout?: number) => {
+    (update: UpdateType): () => void;
+    cleanup(): void;
+};
 export declare const useIsMounted: () => any;
 export declare const nodeReducer: <T>(state: NodeT<T>, { data, type }: ActionType<T>) => T;
 export declare const collectionReducer: <T>(state: CollectionState<T>, { data, type }: ActionType<T>) => CollectionState<T>;
@@ -151,6 +176,7 @@ export declare const useGunKeys: (sea: any, existingKeys?: KeyPair | undefined |
 export declare const useGunOnNodeUpdated: <T>(ref: GunRef, opts: Options | undefined, cb: (data: T, nodeID: string) => void, cleanup?: () => void) => void;
 export declare const useGunState: <T>(ref: GunRef, opts?: Options) => UseGunStateReturn<T>;
 export declare const useGunCollectionState: <T extends Record<string, any>>(ref: GunRef, opts?: Options) => UseGunCollectionReturn<T>;
+export declare const useGunCollectionStatePaginated: <T extends Record<string, any>>(ref: GunRef, paginationOpts?: PaginationOptions<T>) => UsePaginatedCollectionReturn<T>;
 export declare const AuthContext: any;
 export declare const AuthProvider: React.FC<AuthProviderOpts>;
 export declare const useAuth: () => AuthContextType;
@@ -161,7 +187,7 @@ export declare const GunProvider: React.FC<{
     children: React.ReactNode;
 }>;
 export declare const useGunContext: () => IGunChainReference;
-export declare const useGunDebug: (ref: IGunChainReference, label: string, enabled?: boolean) => void;
+export declare const useGunDebug: (ref: IGunChainReference | null, label: string, enabled?: boolean) => void;
 export declare const useGunConnection: (ref: IGunChainReference) => {
     isConnected: boolean;
     lastSeen: Date | null;

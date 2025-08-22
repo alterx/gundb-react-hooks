@@ -16,7 +16,7 @@ Type-safe, performant GunDB hooks for React/Preact with comprehensive error hand
 - **React & Preact** - Support for both frameworks
 - **Real-time** - Live updates with efficient debouncing
 - **Authentication** - Built-in auth provider with key management and storage
-- **Pagination** - High-performance paginated collections with smart caching ⭐ **New!**
+- **Pagination** - High-performance paginated collections with smart caching
 
 ## Quick Start
 
@@ -527,7 +527,7 @@ function AppWithErrorBoundary() {
 - [useGunOnNodeUpdated](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunOnNodeUpdated.md)
 - [useGunState](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunState.md)
 - [useGunCollectionState](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunCollectionState.md)
-- [useGunCollectionStatePaginated](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunCollectionStatePaginated.md) ⭐ **New!**
+- [useGunCollectionStatePaginated](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useGunCollectionStatePaginated.md)
 - [useAuth](https://github.com/alterx/gundb-react-hooks/blob/master/docs/useAuth.md)
 - [AuthProvider](https://github.com/alterx/gundb-react-hooks/blob/master/docs/AuthProvider.md)
 

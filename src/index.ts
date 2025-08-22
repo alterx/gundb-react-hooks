@@ -10,7 +10,6 @@ import React, {
   createContext,
 } from 'react';
 
-// Enhanced TypeScript definitions
 export interface IGunChainReference<T = any> {
   get(key: string): IGunChainReference<T>;
   put(
@@ -49,9 +48,8 @@ export interface GunError {
 
 export type ValidGunData = string | number | boolean | object | null;
 
-// Legacy types for backward compatibility
 export type GunStatic = any;
-export type GunRef = IGunChainReference;
+export type GunRef = IGunChainReference | null;
 export type NamespacedRef = IGunUserReference;
 
 export type KeyPair = {
@@ -61,7 +59,6 @@ export type KeyPair = {
   epriv: string;
 };
 
-// Auth-related types
 export type Storage = {
   getItem: (key: string) => any;
   setItem: (key: string, data: string) => any;
@@ -100,7 +97,6 @@ export type NodeData<T extends ValidGunData> = T & {
   readonly _?: { '#': string; '>': Record<string, number> };
 };
 
-// Enhanced legacy type for backward compatibility
 export type NodeT<T> = T & { nodeID: string; [key: string]: any };
 
 export type ActionType<T> =
@@ -129,18 +125,16 @@ export interface GunOptions
     [key: string]: any;
   }> {}
 
-export interface CollectionState<T>
-  extends Partial<{
-    collection: Map<string, T>;
-    sorted: T[];
-    infiniteScrolling: {
-      isFetching: boolean;
-      lastFetched: string;
-      reverse: boolean;
-    };
-  }> {}
+export interface CollectionState<T> {
+  collection: Map<string, T>;
+  sorted?: T[];
+  infiniteScrolling?: {
+    isFetching: boolean;
+    lastFetched: string;
+    reverse: boolean;
+  };
+}
 
-// Hook return types
 export interface UseGunStateReturn<T> {
   fields: T;
   put: (data: Partial<T>) => Promise<void>;
@@ -151,7 +145,7 @@ export interface UseGunStateReturn<T> {
 }
 
 export interface UseGunCollectionReturn<T> {
-  collection: Map<string, NodeT<T>> | undefined;
+  collection: Map<string, NodeT<T>>;
   items: NodeT<T>[];
   addToSet: (data: T, nodeID?: string) => Promise<void>;
   updateInSet: (nodeID: string, data: Partial<T>) => Promise<void>;
@@ -161,8 +155,9 @@ export interface UseGunCollectionReturn<T> {
   count: number;
 }
 
-export interface PaginationOptions<T> {
+export interface PaginationOptions<T> extends Options {
   pageSize?: number;
+  currentPage?: number;
   sortBy?: keyof T | ((a: NodeT<T>, b: NodeT<T>) => number);
   sortOrder?: 'asc' | 'desc';
   filter?: (item: NodeT<T>) => boolean;
@@ -171,24 +166,20 @@ export interface PaginationOptions<T> {
 
 export interface UsePaginatedCollectionReturn<T>
   extends UseGunCollectionReturn<T> {
-  // Pagination state
   currentPage: number;
   totalPages: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
   pageSize: number;
 
-  // Pagination actions
   nextPage: () => void;
   prevPage: () => void;
   goToPage: (page: number) => void;
   setPageSize: (size: number) => void;
 
-  // Current page data
   currentPageItems: NodeT<T>[];
   currentPageCount: number;
 
-  // Optimizations
   isLoadingPage: boolean;
   preloadedPages: Set<number>;
 }
@@ -219,7 +210,6 @@ export const decryptData = async (
   }
 };
 
-// Utility functions
 const debounce = <T extends (...args: any[]) => any>(
   func: T,
   wait: number,
@@ -247,7 +237,6 @@ const validateData = <T>(data: T, context: string): void => {
 };
 
 const warnInDevelopment = (condition: boolean, message: string): void => {
-  // @ts-ignore
   if (typeof window !== 'undefined' && condition) {
     console.warn(`[GunDB Hooks Warning] ${message}`);
   }
@@ -260,7 +249,8 @@ export const debouncedUpdates = (
 ) => {
   let updates: any[] = [];
   let handler: any;
-  return (update: UpdateType) => {
+
+  const updateFunction = (update: UpdateType) => {
     updates.push(update);
     if (!handler) {
       handler = setTimeout(() => {
@@ -287,6 +277,16 @@ export const debouncedUpdates = (
       handler = null;
     };
   };
+
+  updateFunction.cleanup = () => {
+    if (handler) {
+      clearTimeout(handler);
+      updates = [];
+      handler = null;
+    }
+  };
+
+  return updateFunction;
 };
 
 export const useIsMounted = () => {
@@ -321,30 +321,34 @@ export const collectionReducer = <T>(
 ): CollectionState<T> => {
   switch (type) {
     case 'add':
+      const newCollectionForAdd = new Map(state.collection);
       if (Array.isArray(data)) {
         data.forEach((item: NodeT<T>) => {
-          state.collection?.set(item.nodeID, item);
+          newCollectionForAdd.set(item.nodeID, item);
         });
       } else {
-        state.collection?.set(data.nodeID, data);
+        newCollectionForAdd.set(data.nodeID, data);
       }
       return {
         ...state,
-        collection: state.collection,
+        collection: newCollectionForAdd,
       };
     case 'update':
       if (!Array.isArray(data)) {
-        state.collection?.set(data.nodeID, data);
+        const newCollectionForUpdate = new Map(state.collection);
+        newCollectionForUpdate.set(data.nodeID, data);
+        return {
+          ...state,
+          collection: newCollectionForUpdate,
+        };
       }
-      return {
-        ...state,
-        collection: state.collection,
-      };
+      return state;
     case 'remove':
-      state.collection?.delete(data.nodeID);
+      const newCollectionForRemove = new Map(state.collection);
+      newCollectionForRemove.delete(data.nodeID);
       return {
         ...state,
-        collection: state.collection,
+        collection: newCollectionForRemove,
       };
     default:
       throw new Error(`Unknown action type: ${type}`);
@@ -384,7 +388,7 @@ export const useGun = (Gun: GunStatic, opts: GunOptions) => {
 
 export const useGunNamespace = (gun: GunRef, soul?: string) => {
   const [namespace, setNamespace] = useState(
-    soul ? gun.user(soul) : gun.user(),
+    gun && soul ? gun.user(soul) : gun ? gun.user() : null,
   );
   useEffect(() => {
     if (gun && !namespace) {
@@ -409,13 +413,39 @@ export const useGunKeyAuth = (
     if (!gun) return;
 
     // @ts-ignore - Gun types are not properly defined
-    const cleanup = gun.on('auth', () => {
+    const off = gun.on('auth', () => {
       setIsLoggedIn(true);
       setError(null);
     });
 
-    return cleanup;
+    // Ensure we always return a function for cleanup
+    return () => {
+      if (typeof off === 'function') {
+        try {
+          off();
+        } catch (e) {}
+      } else if (typeof (gun as any).off === 'function') {
+        try {
+          (gun as any).off();
+        } catch (e) {}
+      }
+    };
   }, [gun]);
+
+  useEffect(() => {
+    if (!keys || !triggerAuth) {
+      setIsLoggedIn(false);
+      setError(null);
+    }
+  }, [keys, triggerAuth]);
+
+  useEffect(() => {
+    if (namespacedGraph && namespacedGraph.is) {
+      setIsLoggedIn(true);
+    } else if (namespacedGraph && !namespacedGraph.is && isLoggedIn) {
+      setIsLoggedIn(false);
+    }
+  }, [namespacedGraph, isLoggedIn]);
 
   useEffect(() => {
     if (namespacedGraph && !namespacedGraph.is && keys && triggerAuth) {
@@ -449,13 +479,13 @@ export const useGunKeys = (
   );
 
   useEffect(() => {
-    async function getKeySet() {
+    const getKeySet = async () => {
       const pair: KeyPair = await sea.pair();
       setNewKeys(pair);
-    }
+    };
 
     if (!newKeys && !existingKeys) {
-      getKeySet();
+      getKeySet().catch(console.error);
     }
 
     if (existingKeys) {
@@ -515,7 +545,6 @@ export const useGunOnNodeUpdated = <T>(
 
     return () => {
       if (handler.current) {
-        //cleanup gun .on listener
         handler.current();
         handler.current = null;
       }
@@ -535,7 +564,19 @@ export const useGunState = <T>(
     useOpen: false,
   },
 ): UseGunStateReturn<T> => {
-  const { appKeys, sea, interval = 100 } = opts;
+  const { appKeys, sea, interval = 100, useOpen } = opts;
+
+  // Memoize the options to prevent unnecessary re-renders
+  const memoizedOpts = useMemo(
+    () => ({
+      appKeys,
+      sea,
+      interval,
+      useOpen,
+    }),
+    [appKeys, sea, interval, useOpen],
+  );
+
   const [fields, dispatch] = useSafeReducer<T>(nodeReducer, {} as T);
   const [error, setError] = useState<GunError | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -544,7 +585,6 @@ export const useGunState = <T>(
   const debouncedHandlers = useRef<Function[]>([]);
   const isMounted = useIsMounted();
 
-  // Development warnings
   useEffect(() => {
     warnInDevelopment(!ref, 'useGunState: ref is undefined');
     warnInDevelopment(
@@ -553,25 +593,22 @@ export const useGunState = <T>(
     );
   }, [ref, appKeys, sea]);
 
-  // Memoized updater
-  const updater = useMemo(
-    () =>
-      debouncedUpdates(
-        (data: any) => {
-          if (isMounted.current) {
-            dispatch({ type: 'add', data });
-            setIsLoading(false);
-            setIsConnected(true);
-            setError(null);
-          }
-        },
-        'object',
-        interval,
-      ),
+  const updater = useCallback(
+    debouncedUpdates(
+      (data: any) => {
+        if (isMounted.current) {
+          dispatch({ type: 'add', data });
+          setIsLoading(false);
+          setIsConnected(true);
+          setError(null);
+        }
+      },
+      'object',
+      interval,
+    ),
     [interval, isMounted],
   );
 
-  // Connection timeout
   useEffect(() => {
     const connectionTimeout = setTimeout(() => {
       if (isLoading) {
@@ -581,14 +618,12 @@ export const useGunState = <T>(
         });
         setIsLoading(false);
       }
-    }, 5000); // 5 second timeout
+    }, 5000);
 
     return () => clearTimeout(connectionTimeout);
   }, [isLoading]);
 
-  useGunOnNodeUpdated(
-    ref,
-    opts,
+  const nodeUpdateCallback = useCallback(
     (item: any) => {
       try {
         if (item && typeof item === 'object') {
@@ -604,18 +639,24 @@ export const useGunState = <T>(
         });
       }
     },
-    () => {
-      if (debouncedHandlers.current.length) {
-        //cleanup timeouts
-        debouncedHandlers.current.forEach((c) => c());
-        debouncedHandlers.current = [];
-      }
-    },
+    [updater],
   );
 
-  // Enhanced put with validation and error handling
+  const cleanupCallback = useCallback(() => {
+    if (debouncedHandlers.current.length) {
+      debouncedHandlers.current.forEach((c) => c());
+      debouncedHandlers.current = [];
+    }
+  }, []);
+
+  useGunOnNodeUpdated(ref, memoizedOpts, nodeUpdateCallback, cleanupCallback);
+
   const put = useCallback(
     async (data: Partial<T>): Promise<void> => {
+      if (!ref) {
+        throw new Error('useGunState: ref is undefined');
+      }
+
       try {
         validateData(data, 'useGunState.put');
         setError(null);
@@ -648,9 +689,12 @@ export const useGunState = <T>(
     [ref, appKeys, sea],
   );
 
-  // Enhanced remove with validation
   const remove = useCallback(
     async (field: string): Promise<void> => {
+      if (!ref) {
+        throw new Error('useGunState: ref is undefined');
+      }
+
       try {
         validateNodeID(field);
         setError(null);
@@ -703,7 +747,18 @@ export const useGunCollectionState = <T extends Record<string, any>>(
     useOpen: false,
   },
 ): UseGunCollectionReturn<T> => {
-  const { appKeys, sea, interval = 100 } = opts;
+  const { appKeys, sea, interval = 100, useOpen } = opts;
+
+  const memoizedOpts = useMemo(
+    () => ({
+      appKeys,
+      sea,
+      interval,
+      useOpen,
+    }),
+    [appKeys, sea, interval, useOpen],
+  );
+
   const [{ collection }, dispatch] = useSafeReducer<CollectionState<NodeT<T>>>(
     collectionReducer,
     {
@@ -716,7 +771,8 @@ export const useGunCollectionState = <T extends Record<string, any>>(
   const debouncedHandlers = useRef<Function[]>([]);
   const isMounted = useIsMounted();
 
-  // Development warnings
+  const hasValidRef = Boolean(ref);
+
   useEffect(() => {
     warnInDevelopment(!ref, 'useGunCollectionState: ref is undefined');
     warnInDevelopment(
@@ -725,24 +781,28 @@ export const useGunCollectionState = <T extends Record<string, any>>(
     );
   }, [ref, appKeys, sea]);
 
-  // Memoized updater
-  const updater = useMemo(
-    () =>
-      debouncedUpdates(
-        (data: NodeT<T>) => {
-          if (isMounted.current) {
-            dispatch({ type: 'add', data });
-            setIsLoading(false);
-            setError(null);
-          }
-        },
-        'map',
-        interval,
-      ),
+  useEffect(() => {
+    if (!hasValidRef) {
+      setIsLoading(false);
+    }
+  }, [hasValidRef]);
+
+  const updater = useCallback(
+    debouncedUpdates(
+      (dataMap: Map<string, NodeT<T>>) => {
+        if (isMounted.current) {
+          const items = Array.from(dataMap.values());
+          dispatch({ type: 'add', data: items });
+          setIsLoading(false);
+          setError(null);
+        }
+      },
+      'map',
+      interval,
+    ),
     [interval, isMounted],
   );
 
-  // Connection timeout
   useEffect(() => {
     const connectionTimeout = setTimeout(() => {
       if (isLoading) {
@@ -757,9 +817,7 @@ export const useGunCollectionState = <T extends Record<string, any>>(
     return () => clearTimeout(connectionTimeout);
   }, [isLoading]);
 
-  useGunOnNodeUpdated(
-    ref.map(),
-    opts,
+  const nodeUpdateCallback = useCallback(
     (item: T, nodeID: string) => {
       if (item && typeof item === 'object') {
         try {
@@ -777,19 +835,29 @@ export const useGunCollectionState = <T extends Record<string, any>>(
         }
       }
     },
-    () => {
-      if (debouncedHandlers.current.length) {
-        //cleanup timeouts
-        debouncedHandlers.current.forEach((c) => c());
-        debouncedHandlers.current = [];
-      }
-    },
+    [updater],
   );
 
-  // Working with Sets - Enhanced CRUD operations
+  const cleanupCallback = useCallback(() => {
+    if (debouncedHandlers.current.length) {
+      debouncedHandlers.current.forEach((c) => c());
+      debouncedHandlers.current = [];
+    }
+  }, []);
+
+  useGunOnNodeUpdated(
+    ref ? ref.map() : null,
+    memoizedOpts,
+    nodeUpdateCallback,
+    cleanupCallback,
+  );
 
   const updateInSet = useCallback(
     async (nodeID: string, data: Partial<T>): Promise<void> => {
+      if (!ref) {
+        throw new Error('useGunCollectionState: ref is undefined');
+      }
+
       try {
         validateNodeID(nodeID);
         validateData(data, 'useGunCollectionState.updateInSet');
@@ -830,6 +898,10 @@ export const useGunCollectionState = <T extends Record<string, any>>(
 
   const addToSet = useCallback(
     async (data: T, nodeID?: string): Promise<void> => {
+      if (!ref) {
+        throw new Error('useGunCollectionState: ref is undefined');
+      }
+
       try {
         validateData(data, 'useGunCollectionState.addToSet');
         setError(null);
@@ -865,6 +937,10 @@ export const useGunCollectionState = <T extends Record<string, any>>(
 
   const removeFromSet = useCallback(
     async (nodeID: string): Promise<void> => {
+      if (!ref) {
+        throw new Error('useGunCollectionState: ref is undefined');
+      }
+
       try {
         validateNodeID(nodeID);
         setError(null);
@@ -898,17 +974,12 @@ export const useGunCollectionState = <T extends Record<string, any>>(
     [ref, isMounted],
   );
 
-  // Convert Map to Array for easier consumption
-  const items = useMemo(
-    () => (collection ? Array.from(collection.values()) : []),
-    [collection],
-  );
-
-  const count = useMemo(() => collection?.size || 0, [collection]);
+  const items = useMemo(() => Array.from(collection.values()), [collection]);
+  const count = useMemo(() => collection.size, [collection]);
 
   return {
     collection,
-    items, // More convenient array access
+    items,
     addToSet,
     updateInSet,
     removeFromSet,
@@ -918,16 +989,9 @@ export const useGunCollectionState = <T extends Record<string, any>>(
   };
 };
 
-// Paginated Collection Hook with Optimizations
 export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
   ref: GunRef,
   paginationOpts: PaginationOptions<T> = {},
-  opts: Options = {
-    appKeys: '',
-    sea: null,
-    interval: 100,
-    useOpen: false,
-  },
 ): UsePaginatedCollectionReturn<T> => {
   const {
     pageSize = 20,
@@ -935,22 +999,39 @@ export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
     sortOrder = 'asc',
     filter,
     preloadPages = 1,
+    currentPage: initialPage = 0,
+    appKeys = '',
+    sea = null,
+    interval = 100,
+    useOpen = false,
   } = paginationOpts;
 
-  const [currentPage, setCurrentPage] = useState(0);
+  // Extract Options for the base collection hook - memoize to prevent infinite re-renders
+  const opts: Options = useMemo(
+    () => ({
+      appKeys,
+      sea,
+      interval,
+      useOpen,
+    }),
+    [appKeys, sea, interval, useOpen],
+  );
+
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [currentPageItems, setCurrentPageItems] = useState<NodeT<T>[]>([]);
   const [isLoadingPage, setIsLoadingPage] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
 
-  // Cache for pages
+  useEffect(() => {
+    setCurrentPage(initialPage);
+  }, [initialPage]);
+
   const pageCache = useRef<Map<number, NodeT<T>[]>>(new Map());
   const cacheTimestamps = useRef<Map<number, number>>(new Map());
-  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  const CACHE_TTL = 5 * 60 * 1000;
 
-  // Use original hook for basic collection management
   const baseCollection = useGunCollectionState<T>(ref, opts);
 
-  // Cache utilities
   const getCachedPage = useCallback((page: number): NodeT<T>[] | null => {
     const cached = pageCache.current.get(page);
     const timestamp = cacheTimestamps.current.get(page);
@@ -966,14 +1047,11 @@ export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
     cacheTimestamps.current.set(page, Date.now());
   }, []);
 
-  // Process and sort all items
   const processedItems = useMemo(() => {
-    const allItems = Array.from(baseCollection.collection?.values() || []);
+    const allItems = Array.from(baseCollection.collection.values());
 
-    // Apply filtering
     let filteredItems = filter ? allItems.filter(filter) : allItems;
 
-    // Apply sorting
     if (sortBy) {
       filteredItems = [...filteredItems].sort((a, b) => {
         if (typeof sortBy === 'function') {
@@ -991,15 +1069,12 @@ export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
     return filteredItems;
   }, [baseCollection.collection, filter, sortBy, sortOrder]);
 
-  // Update total items when processed items change
   useEffect(() => {
     setTotalItems(processedItems.length);
-    // Clear cache when data changes significantly
     pageCache.current.clear();
     cacheTimestamps.current.clear();
   }, [processedItems]);
 
-  // Load specific page
   const loadPage = useCallback(
     async (page: number) => {
       if (page < 0) return;
@@ -1007,7 +1082,6 @@ export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
       setIsLoadingPage(true);
 
       try {
-        // Check cache first
         const cached = getCachedPage(page);
         if (cached) {
           setCurrentPageItems(cached);
@@ -1015,16 +1089,13 @@ export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
           return;
         }
 
-        // Extract page from processed items
         const startIndex = page * pageSize;
         const endIndex = startIndex + pageSize;
         const pageItems = processedItems.slice(startIndex, endIndex);
 
-        // Cache the page
         setCachedPage(page, pageItems);
         setCurrentPageItems(pageItems);
 
-        // Preload adjacent pages
         for (let i = 1; i <= preloadPages; i++) {
           const nextPage = page + i;
           const prevPage = page - i;
@@ -1065,12 +1136,16 @@ export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
     [pageSize, processedItems, preloadPages, getCachedPage, setCachedPage],
   );
 
-  // Pagination calculations
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const hasNextPage = currentPage < totalPages - 1;
-  const hasPrevPage = currentPage > 0;
+  const totalPages = useMemo(
+    () => Math.ceil(totalItems / pageSize),
+    [totalItems, pageSize],
+  );
+  const hasNextPage = useMemo(
+    () => currentPage < totalPages - 1,
+    [currentPage, totalPages],
+  );
+  const hasPrevPage = useMemo(() => currentPage > 0, [currentPage]);
 
-  // Pagination controls
   const nextPage = useCallback(() => {
     if (hasNextPage) {
       const newPage = currentPage + 1;
@@ -1101,45 +1176,46 @@ export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
     (size: number) => {
       if (size <= 0) return;
 
-      // Calculate which item we're currently viewing
       const currentItemIndex = currentPage * pageSize;
-      // Calculate new page number to maintain position
       const newPage = Math.floor(currentItemIndex / size);
 
       setCurrentPage(newPage);
-      pageCache.current.clear(); // Clear cache since page size changed
+      pageCache.current.clear();
       cacheTimestamps.current.clear();
-      loadPage(newPage);
+      loadPage(newPage).catch(console.error);
     },
     [currentPage, pageSize, loadPage],
   );
 
-  // Load current page when page changes or data updates
   useEffect(() => {
     if (totalPages > 0) {
-      // Ensure current page is valid
       if (currentPage >= totalPages) {
         const newPage = Math.max(0, totalPages - 1);
         setCurrentPage(newPage);
-        loadPage(newPage);
+        loadPage(newPage).catch(console.error);
       } else {
-        loadPage(currentPage);
+        loadPage(currentPage).catch(console.error);
       }
+    } else if (processedItems.length > 0) {
+      loadPage(currentPage).catch(console.error);
     }
-  }, [currentPage, totalPages, loadPage]);
+  }, [currentPage, totalPages, loadPage, processedItems.length]);
 
-  // Real-time updates - update cache when base collection changes
+  useEffect(() => {
+    if (processedItems.length > 0) {
+      loadPage(currentPage).catch(console.error);
+    }
+  }, [processedItems.length]);
+
   const updatePageCache = useMemo(
     () =>
       debounce((updatedItem: NodeT<T>) => {
-        // Only update pages that might contain this item
         pageCache.current.forEach((page, pageNum) => {
           const itemIndex = page.findIndex(
             (item) => item.nodeID === updatedItem.nodeID,
           );
           if (itemIndex !== -1) {
             page[itemIndex] = updatedItem;
-            // Trigger re-render only for current page
             if (pageNum === currentPage) {
               setCurrentPageItems([...page]);
             }
@@ -1149,7 +1225,6 @@ export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
     [currentPage],
   );
 
-  // Watch for changes in base collection to update cache
   useEffect(() => {
     if (baseCollection.collection) {
       Array.from(baseCollection.collection.values()).forEach((item) => {
@@ -1158,29 +1233,31 @@ export const useGunCollectionStatePaginated = <T extends Record<string, any>>(
     }
   }, [baseCollection.collection, updatePageCache]);
 
+  const preloadedPages = useMemo(
+    () => new Set(Array.from(pageCache.current.keys())),
+    [],
+  );
+
   return {
     ...baseCollection,
-    // Pagination state
+    items: currentPageItems,
+    count: totalItems,
     currentPage,
     totalPages,
     hasNextPage,
     hasPrevPage,
     pageSize,
-    // Pagination actions
     nextPage,
     prevPage,
     goToPage,
     setPageSize: setNewPageSize,
-    // Current page data
     currentPageItems,
     currentPageCount: currentPageItems.length,
-    // Optimizations
     isLoadingPage,
-    preloadedPages: new Set(Array.from(pageCache.current.keys())),
+    preloadedPages,
   };
 };
 
-// Auth Context and Provider
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<AuthProviderOpts> = ({
@@ -1206,7 +1283,6 @@ export const AuthProvider: React.FC<AuthProviderOpts> = ({
   });
 
   const gun = useGun(Gun, gunOpts);
-  // new keypair
   const newKeys = useGunKeys(sea);
   const [user, isLoggedIn] = useGunKeyAuth(
     gun,
@@ -1216,10 +1292,15 @@ export const AuthProvider: React.FC<AuthProviderOpts> = ({
 
   useEffect(() => {
     if (isLoggedIn && existingKeys && keyStatus === 'new') {
-      const storeKeys = async () => {
-        await storage.setItem(keyFieldName, JSON.stringify(existingKeys));
+      const storeKeysEffect = async () => {
+        try {
+          await storage.setItem(keyFieldName, JSON.stringify(existingKeys));
+        } catch (error) {
+          console.error('Failed to store keys:', error);
+        }
       };
-      storeKeys();
+
+      storeKeysEffect();
     }
   }, [isLoggedIn, existingKeys, keyFieldName, storage, keyStatus]);
 
@@ -1248,8 +1329,7 @@ export const AuthProvider: React.FC<AuthProviderOpts> = ({
   }, [storage, keyFieldName, existingKeys]);
 
   const login = useCallback(
-    async (keys?: undefined | string | KeyPair) => {
-      // use keys sent by the user or a new set
+    (keys?: undefined | string | KeyPair) => {
       setStatuses({
         isReadyToAuth: 'ready',
         existingKeys: (keys as KeyPair) || newKeys || null,
@@ -1263,20 +1343,31 @@ export const AuthProvider: React.FC<AuthProviderOpts> = ({
     (onLoggedOut?: () => void) => {
       const removeKeys = async () => {
         try {
+          // Call user.leave() first to properly logout from Gun
+          if (user && user.leave) {
+            user.leave();
+          }
+
+          // Remove keys from storage
           await storage.removeItem(keyFieldName);
+
+          // Reset the authentication state
           setStatuses({
             isReadyToAuth: '',
             existingKeys: null,
             keyStatus: '',
           });
-          if (user) {
-            user.leave();
-          }
+
+          // Call the callback if provided
           if (onLoggedOut) {
             onLoggedOut();
           }
         } catch (error) {
           console.warn('Failed to remove keys from storage:', error);
+          // Still call the callback even if storage removal fails
+          if (onLoggedOut) {
+            onLoggedOut();
+          }
         }
       };
       removeKeys();
@@ -1326,22 +1417,44 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-// Context provider for Gun instance
 export const GunContext = createContext<IGunChainReference | null>(null);
+
+const safeStringifyOptions = (options: GunOptions): string => {
+  try {
+    return JSON.stringify(options, (key, value) => {
+      // Skip circular references and functions
+      if (
+        typeof value === 'function' ||
+        (typeof value === 'object' &&
+          value !== null &&
+          value.constructor?.name?.includes('Gun'))
+      ) {
+        return '[Circular/Function]';
+      }
+      return value;
+    });
+  } catch (err) {
+    return String(Math.random());
+  }
+};
 
 export const GunProvider: React.FC<{
   gun: GunStatic;
   options: GunOptions;
   children: React.ReactNode;
 }> = ({ gun, options, children }) => {
+  const memoizedOptions = useMemo(
+    () => safeStringifyOptions(options),
+    [options],
+  );
   const gunInstance = useMemo(() => {
     try {
-      return gun(options);
+      return gun(memoizedOptions);
     } catch (err) {
       console.error('Failed to initialize Gun instance:', err);
       return null;
     }
-  }, [gun, JSON.stringify(options)]);
+  }, [gun, memoizedOptions]);
 
   return React.createElement(
     GunContext.Provider,
@@ -1358,9 +1471,8 @@ export const useGunContext = (): IGunChainReference => {
   return context;
 };
 
-// Debug utility hook
 export const useGunDebug = (
-  ref: IGunChainReference,
+  ref: IGunChainReference | null,
   label: string,
   enabled: boolean = true,
 ): void => {
@@ -1369,7 +1481,7 @@ export const useGunDebug = (
 
     console.log(`[GunDB Debug - ${label}] Listening to:`, ref);
 
-    const cleanup = ref.on((data, key) => {
+    const off = ref.on((data, key) => {
       console.log(`[${label}] Update:`, {
         key,
         data,
@@ -1377,11 +1489,20 @@ export const useGunDebug = (
       });
     });
 
-    return cleanup;
+    return () => {
+      if (typeof off === 'function') {
+        try {
+          off();
+        } catch (e) {}
+      } else if (typeof (ref as any).off === 'function') {
+        try {
+          (ref as any).off();
+        } catch (e) {}
+      }
+    };
   }, [ref, label, enabled]);
 };
 
-// Connection status hook
 export const useGunConnection = (
   ref: IGunChainReference,
 ): {
@@ -1406,22 +1527,29 @@ export const useGunConnection = (
           err: 'Connection timeout',
           context: 'useGunConnection',
         });
-      }, 10000); // 10 second timeout
+      }, 10000);
     };
 
-    const cleanup = ref.on(() => {
+    const off = ref.on(() => {
       setIsConnected(true);
       setLastSeen(new Date());
       setError(null);
       resetTimeout();
     });
 
-    // Initial timeout
     resetTimeout();
 
     return () => {
       clearTimeout(timeoutId);
-      if (cleanup) cleanup();
+      if (typeof off === 'function') {
+        try {
+          off();
+        } catch (e) {}
+      } else if (typeof (ref as any).off === 'function') {
+        try {
+          (ref as any).off();
+        } catch (e) {}
+      }
     };
   }, [ref]);
 

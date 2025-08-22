@@ -1,6 +1,6 @@
 {
   "name": "@altrx/gundb-react-hooks",
-  "version": "1.0.0rc1",
+  "version": "1.0.0rc2",
   "description": "Type-safe, performant GunDB hooks for React/Preact with authentication, error handling, and debugging utilities",
   "browser": "./dist/gundb-react-hooks.umd.js",
   "umd:main": "./dist/gundb-react-hooks.umd.js",
