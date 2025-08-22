@@ -6,6 +6,11 @@
 
 Type-safe, performant GunDB hooks for React/Preact with comprehensive error handling, loading states, and debugging utilities.
 
+## Live Example
+https://gun-react-todoapp.vercel.app/
+
+Repo available at: https://github.com/alterx/gun-react-todoapp
+
 ## Features
 
 - **Type-safe** - Comprehensive TypeScript definitions
